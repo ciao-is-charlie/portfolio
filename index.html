@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蔡昕誼 Charlie｜大夜櫃檯的自動化工具箱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1522;
+    --panel:#171f31;
+    --panel-2:#1c2740;
+    --ink:#edf1f8;
+    --muted:#96a3bb;
+    --amber:#f2b45f;
+    --amber-deep:#d89840;
+    --link:#8fc1e3;
+    --green:#7fd6a4;
+    --line:rgba(255,255,255,.08);
+    --serif:"Noto Serif TC",serif;
+    --sans:"Noto Sans TC",sans-serif;
+    --mono:"JetBrains Mono",monospace;
+  }
+  html[data-theme="light"]{
+    --bg:#f6f3ec; --panel:#ffffff; --panel-2:#f0ead9;
+    --ink:#232a36; --muted:#5b6577;
+    --amber:#b0741a; --amber-deep:#8f5c10;
+    --link:#1f6fa8; --green:#1e8a55; --line:rgba(25,35,55,.13);
+  }
+  html[data-theme="light"] header.hero{
+    background:
+      radial-gradient(ellipse 620px 340px at 82% 0%, rgba(176,116,26,.10), transparent 70%),
+      radial-gradient(ellipse 700px 400px at 0% 100%, rgba(120,150,200,.14), transparent 70%);
+  }
+  html[data-theme="light"] .btn.primary{ color:#fff; }
+  html[data-theme="light"] .media-row figure{ background:#faf8f3; }
+  html[data-theme="light"] footer .fine{ color:#8a94a6; }
+  .theme-toggle{
+    position:fixed; top:16px; right:16px; z-index:99;
+    width:42px; height:42px; border-radius:50%;
+    border:1px solid var(--line); background:var(--panel);
+    color:var(--ink); font-size:17px; cursor:pointer;
+    box-shadow:0 3px 12px rgba(0,0,0,.2);
+  }
+  .theme-toggle:hover{ border-color:var(--amber); }
+  body{ transition:background .25s ease, color .25s ease; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.75;
+  }
+  a{ color:var(--link); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  .wrap{ max-width:980px; margin:0 auto; padding:0 24px; }
+
+  /* ===== 夜班日誌時間戳（簽名元素） ===== */
+  .stamp{
+    font-family:var(--mono); font-size:11px; letter-spacing:2px;
+    color:var(--amber); text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .stamp::before{
+    content:""; width:22px; height:1px; background:var(--amber);
+  }
+
+  /* ===== Hero ===== */
+  header.hero{
+    padding:84px 0 60px;
+    background:
+      radial-gradient(ellipse 620px 340px at 82% 0%, rgba(242,180,95,.10), transparent 70%),
+      radial-gradient(ellipse 700px 400px at 0% 100%, rgba(30,60,110,.25), transparent 70%);
+    border-bottom:1px solid var(--line);
+  }
+  .hero h1{
+    font-family:var(--serif); font-weight:900;
+    font-size:clamp(30px, 5.4vw, 50px); line-height:1.25;
+    margin:16px 0 14px; letter-spacing:1px;
+  }
+  .hero h1 em{ font-style:normal; color:var(--amber); }
+  .hero .lede{
+    max-width:600px; color:var(--muted); font-size:16px;
+  }
+  .hero .lede b{ color:var(--ink); font-weight:500; }
+  .fact-row{
+    display:flex; flex-wrap:wrap; gap:10px 28px;
+    margin-top:30px; font-family:var(--mono); font-size:12.5px;
+    color:var(--muted);
+  }
+  .fact-row b{ color:var(--ink); font-weight:600; }
+  .hero-cta{ margin-top:34px; display:flex; gap:14px; flex-wrap:wrap; }
+  .btn{
+    display:inline-block; padding:11px 22px; border-radius:8px;
+    font-weight:700; font-size:14.5px; font-family:var(--sans);
+    transition:transform .15s ease, background .15s ease;
+  }
+  .btn:hover{ text-decoration:none; transform:translateY(-1px); }
+  .btn.primary{ background:var(--amber); color:#231604; }
+  .btn.primary:hover{ background:var(--amber-deep); }
+  .btn.ghost{ border:1px solid var(--line); color:var(--ink); }
+  .btn.ghost:hover{ border-color:var(--amber); color:var(--amber); }
+
+  /* ===== Section 共用 ===== */
+  section{ padding:64px 0 24px; }
+  .sec-head{ margin-bottom:34px; }
+  .sec-head h2{
+    font-family:var(--serif); font-weight:900; font-size:27px;
+    margin-top:10px; letter-spacing:1px;
+  }
+  .sec-head p{ color:var(--muted); margin-top:6px; max-width:640px; }
+
+  /* ===== 專案卡片 ===== */
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:760px){ .cards{ grid-template-columns:1fr; } }
+  .card{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:26px 26px 22px;
+    display:flex; flex-direction:column; gap:12px;
+    transition:border-color .2s ease;
+  }
+  .card:hover{ border-color:rgba(242,180,95,.4); }
+  .card h3{
+    font-size:18.5px; font-weight:700; letter-spacing:.5px;
+  }
+  .card .scene{
+    font-size:12px; color:var(--muted); font-family:var(--mono);
+    margin-top:-8px;
+  }
+  .card p{ color:var(--muted); font-size:14px; }
+  .card p b{ color:var(--ink); font-weight:500; }
+  .shift{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--panel-2); border-radius:8px;
+    padding:10px 14px; font-size:13px;
+  }
+  .shift .before{ color:var(--muted); text-decoration:line-through; text-decoration-color:rgba(150,163,187,.6); }
+  .shift .arrow{ color:var(--amber); font-family:var(--mono); }
+  .shift .after{ color:var(--amber); font-weight:700; }
+  .tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+  .tag{
+    font-family:var(--mono); font-size:11px; color:var(--muted);
+    border:1px solid var(--line); border-radius:20px; padding:2px 10px;
+  }
+  .card-cta{ margin-top:8px; }
+  .card-cta .btn{ padding:9px 18px; font-size:13.5px; }
+
+  /* ===== 部署與整合 ===== */
+  .deploy{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:30px; margin-bottom:22px;
+  }
+  .deploy h3{ font-size:19px; margin-bottom:4px; }
+  .deploy .scene{ font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .deploy p{ color:var(--muted); font-size:14.5px; margin-top:12px; max-width:820px; }
+  .deploy p b{ color:var(--ink); font-weight:500; }
+  .media-row{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+    gap:14px; margin-top:18px;
+  }
+  .media-row figure{
+    background:#0c1119; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden;
+  }
+  .media-row img{ width:100%; display:block; }
+  .media-row figcaption{
+    font-size:12px; color:var(--muted); padding:8px 12px;
+    border-top:1px solid var(--line);
+  }
+  .placeholder{
+    border:1.5px dashed rgba(150,163,187,.35); border-radius:10px;
+    min-height:150px; display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:13px; text-align:center; padding:20px;
+    background:rgba(255,255,255,.02);
+  }
+  .video-wrap{
+    position:relative; width:100%; max-width:720px;
+    aspect-ratio:16/9; margin-top:18px;
+    border-radius:10px; overflow:hidden;
+    border:1px solid var(--line); background:#0c1119;
+  }
+  .video-wrap iframe{
+    position:absolute; inset:0; width:100%; height:100%; border:0;
+  }
+
+  /* ===== 技術棧 ===== */
+  .stack{ display:flex; flex-wrap:wrap; gap:10px; }
+  .stack span{
+    font-family:var(--mono); font-size:13px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:7px 16px;
+  }
+  .stack span.learning{ border-style:dashed; color:var(--muted); }
+  .stack-note{ color:var(--muted); font-size:13px; margin-top:14px; }
+
+  /* ===== 關於我時間軸 ===== */
+  .timeline{ border-left:2px solid var(--line); margin-left:6px; }
+  .tl-item{
+    position:relative; padding:0 0 26px 26px;
+  }
+  .tl-item::before{
+    content:""; position:absolute; left:-6px; top:6px;
+    width:10px; height:10px; border-radius:50%;
+    background:var(--bg); border:2px solid var(--amber);
+  }
+  .tl-time{
+    font-family:var(--mono); font-size:12px; color:var(--amber);
+    letter-spacing:1px;
+  }
+  .tl-body b{ display:block; font-size:15.5px; margin:3px 0 4px; }
+  .tl-body p{ color:var(--muted); font-size:14px; max-width:680px; }
+  .about-note{
+    color:var(--muted); font-size:13px; margin-top:10px;
+    border-top:1px solid var(--line); padding-top:16px; max-width:680px;
+  }
+
+  /* ===== Footer ===== */
+  footer{
+    margin-top:70px; border-top:1px solid var(--line);
+    padding:44px 0 60px;
+  }
+  footer .big{
+    font-family:var(--serif); font-weight:900; font-size:24px;
+    margin:12px 0 8px;
+  }
+  footer p{ color:var(--muted); font-size:14px; max-width:620px; }
+  footer .mail{
+    display:inline-block; margin-top:18px; font-family:var(--mono);
+    font-size:15px; color:var(--amber); border:1px solid rgba(242,180,95,.4);
+    border-radius:8px; padding:10px 20px;
+  }
+  footer .mail:hover{ background:rgba(242,180,95,.08); text-decoration:none; }
+  footer .fine{ font-size:12px; margin-top:28px; color:#5d6a82; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" title="切換深淺色">☀️</button>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="stamp">Night Shift · Front Desk · Automation</span>
+    <h1>我在大夜櫃檯，<br>把重複的工作<em>交給程式做</em>。</h1>
+    <p class="lede">
+      我是<b>蔡昕誼 Charlie</b>，現職飯店大夜櫃檯。</p><p>櫃檯有大量固定格式的重複作業——開憑證、抄車牌、算退款、寫交班。我看到重複性工作會忍不住想自動化，於是一件一件把它們變成工具。</p><p><b>以下每一個都在真實工作中上線使用，其中幾個現在就可以動手操作。</b>
+    </p>
+    <div class="fact-row">
+      <span>已上線工具 <b>8+</b></span>
+      <span>雲端部署 <b>GCP × pm2 24H</b></span>
+      <span>養成方式 <b>自學 × AI 協作</b></span>
+    </div>
+    <div class="hero-cta">
+      <a class="btn primary" href="#live">▶ 直接試用工具</a>
+      <a class="btn ghost" href="#deploy">看部署與整合</a>
+      <a class="btn ghost" href="resume.html">📄 我的履歷</a>
+    </div>
+  </div>
+</header>
+
+<section id="live">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="stamp">01 · Try It Yourself</span>
+      <h2>可以直接操作的工具</h2>
+      <p>不用想像，直接點開來用。以下皆為實際上線版本的展示版。</p><p>（客人資料與公司識別已替換為示範內容）</p>
+    </div>
+    <div class="cards">
+
+      <div class="card">
+        <h3>XPARK 取票憑證產生器</h3>
+        <span class="scene">住宿套裝的入園憑證開立</span>
+        <p><b>原本</b>要開 Word 逐欄修改日期、姓名、序號、票數，常漏改票數、日期或另存 PDF 時誤存成 docx。</p><p><b>現在</b>填一次表單即時預覽 A4 憑證，一鍵存成固定命名的 PDF，檔名同時是給 Outlook 巨集讀取的資料格式，存好切到 Outlook 按一下就自動生成客人通知信。</p>
+        <div class="shift">
+          <span class="before">逐欄改 Word 約 3 分鐘/件，套票一多就易有錯漏</span>
+          <span class="arrow">➜</span>
+          <span class="after">1 分鐘內完成，格式零錯誤，也不怕漏改任何地方</span>
+        </div>
+        <div class="tags"><span class="tag">HTML/CSS/JS</span><span class="tag">列印排版</span><span class="tag">Outlook VBA 串接</span></div>
+        <div class="card-cta"><a class="btn primary" href="demos/xpark.html" target="_blank">▶ 立即操作</a></div>
+      </div>
+
+      <div class="card">
+        <h3>車號解析助手</h3>
+        <span class="scene">每日接送派車的車牌登記</span>
+        <p>車行每天在 LINE 群傳來一整串格式混亂的派車訊息，但車輛一多就容易有疏漏。</p><p>這支 <b>Google Apps Script</b> 用正則解析訊息、把房號正規化後與班表雙向比對，自動填入車牌與加價註記，<b>比對失敗的會列出清單提醒人工檢查</b>。</p><p>此頁為互動模擬版：左側是模擬的 LINE 群組，一鍵複製訊息貼進外掛，體驗從「逐筆手 KEY」到「整串帶入」的差別。</br><b>示範訊息裡有一筆班表故意還沒 KEY 的派車</b>，看它怎麼被抓出來。</p>
+        <div class="shift">
+          <span class="before">逐筆人工核對抄寫，易漏易錯又耗時</span>
+          <span class="arrow">➜</span>
+          <span class="after">貼上訊息一鍵填入＋異常回報</span>
+        </div>
+        <div class="tags"><span class="tag">Google Apps Script</span><span class="tag">Regex</span><span class="tag">Google Sheets</span></div>
+        <div class="card-cta"><a class="btn primary" href="demos/taxi.html" target="_blank">▶ 立即操作</a></div>
+      </div>
+
+      <div class="card">
+        <h3>每日交班統計</h3>
+        <span class="scene">大夜班結班報表</span>
+        <p>把住房率、續住、加床、合約統計、特殊房況整合成一個頁面，同時設計可以依照班表和特定條件，篩選出當天午晚餐用餐員工，自動計算並輸出制式交班文字一鍵複製。</br><b>已部署上 GCP 並限制公司 IP 存取</b>，讓公司兩台電腦共同讀寫儲存的房況資料，長期固定的房況不必每天重打。</p>
+        <div class="shift">
+          <span class="before">每天複製前一天的資料逐一修改，還要算員工餐有多少人</span>
+          <span class="arrow">➜</span>
+          <span class="after">自動計算、資料留存、一鍵輸出、上傳班表自動判斷當天用餐人數</span>
+        </div>
+        <div class="tags"><span class="tag">HTML/CSS/JS</span><span class="tag">GCP 部署</span><span class="tag">IP 白名單</span></div>
+        <div class="card-cta"><a class="btn primary" href="demos/shift.html" target="_blank">▶ 立即操作</a></div>
+      </div>
+
+      <div class="card">
+        <h3>訂金退款計算器</h3>
+        <span class="scene">取消訂房的退款試算</span>
+        <p>依定型化契約的取消級距，輸入入住日、取消日與房價，自動算出扣款比例、沒收金額，並分別列出「匯全額」與「只匯訂金」兩種退款情境。</p><p>忙碌勞累人之常情，即使再資深也容易出錯，但錯一次就是一次客訴。</p>
+        <div class="shift">
+          <span class="before">翻契約＋敲計算機，怕算錯起爭議</span>
+          <span class="arrow">➜</span>
+          <span class="after">兩個日期一個金額，所有答案一次出來</span>
+        </div>
+        <div class="tags"><span class="tag">HTML/CSS/JS</span></div>
+        <div class="card-cta"><a class="btn primary" href="demos/refund.html" target="_blank">▶ 立即操作</a></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="deploy">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="stamp">02 · Deploy &amp; Integrate</span>
+      <h2>部署、整合與流程自動化</h2>
+      <p>這些是實際跑在雲端與桌面環境裡的自動化。</p>
+    </div>
+
+    <div class="deploy">
+      <h3>Discord Bot × GCP 全天候運行</h3>
+      <span class="scene">Python · discord.py · GCP VM · SSH · pm2</span>
+      <p>
+        此為我個人某段時期閒暇時間的小樂趣，以 Python 打造兩種 bot：</p>
+<p><b>「小密蘇」</b>，我的個人頻道小秘書。</br>負責<b>社群自動化</b>，使用者按下按鈕即自動開啟一對一私人串、同步到管理頻道通知我有人開窗，審核通過後自動變更身分組，也能依照回覆發放指定連結，把原本要人工盯著的入群審核流程變成半自動。</p>
+<p><b>AI RP bot</b>，串接 API 並套用角色設定，實現簡易、有來有回的 AI 角色扮演對話。</br>
+回覆不再只是制式回覆，而是會透過使用者的訊息進行相應回覆。</br>
+開發流程為 Replit 搭配 GitHub 版控，push 至 <b>GCP 自架雲端伺服器（SSH 管理）</b>，以 <b>pm2</b> 常駐運行、自動重啟，24 小時不中斷。
+      </p>
+      <div class="media-row">
+        <figure><img src="assets/discord-step1.png" alt="步驟1：按鈕觸發成年審核"><figcaption>① 使用者點擊按鈕，觸發成年審核流程</figcaption></figure>
+        <figure><img src="assets/discord-step2.png" alt="步驟2：bot 回覆已開啟私人審核串"><figcaption>② 小密蘇自動開啟一對一私人討論串（僅本人可見）</figcaption></figure>
+        <figure><img src="assets/discord-step3.png" alt="步驟3：私人審核討論串內的操作按鈕"><figcaption>③ 私人串內提供審核資料，一鍵通知管理員或關閉討論串</figcaption></figure>
+        <figure><img src="assets/discord-step4.png" alt="步驟4：管理頻道核准駁回介面與核准紀錄"><figcaption>④ 管理頻道同步收到請求，核准／駁回一鍵處理並留下紀錄，通過後自動變更身分組</figcaption></figure>
+        <figure><img src="assets/pm2-list.png" alt="GCP 伺服器上的 pm2 程序清單"><figcaption>GCP 伺服器實況：mishu-bot 等多支程序以 pm2 常駐運行，room-status-sync 即為交班統計的同步程式</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="deploy">
+      <h3>n8n 每日多益練習 Bot</h3>
+      <span class="scene">n8n · LINE Messaging API · AI 出題 · Google Sheets</span>
+      <p>
+        兩條 workflow 組成的自學系統：</br>
+<b>排程流程</b>每天早上 7 點觸發 AI 生成多益考題、透過 LINE 推送給我，同時把題目與答案寫進 Google Sheets 留存；</br><b>核對流程</b>接收我回傳的作答（如 ABCBC），從試算表撈出正確答案比對，回覆當日成績與逐題解析。目前為個人使用版本，正在把 Switch 節點擴充為多人可用。
+      </p>
+      <div class="media-row">
+        <figure><img src="assets/n8n-schedule.png" alt="n8n 排程出題 workflow"><figcaption>排程流程：AI 出題 ➜ 寫入試算表 ➜ LINE 推送</figcaption></figure>
+        <figure><img src="assets/n8n-check.png" alt="n8n 核對答案 workflow"><figcaption>核對流程：Webhook 收答 ➜ 比對 ➜ 回傳解析</figcaption></figure>
+        <figure><img src="assets/toeic-question.png" alt="LINE 每日考題畫面"><figcaption>每天 07:00 收到的考題</figcaption></figure>
+        <figure><img src="assets/toeic-answer.png" alt="LINE 成績與解析畫面"><figcaption>回傳答案後的成績與解析</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="deploy">
+      <h3>freeCodeCamp 翻譯外掛（使用Claude API）</h3>
+      <span class="scene">Chrome Extension · iOS Userscripts · Claude API · Prompt 設計</span>
+      <p>
+        我正在 freeCodeCamp 自學 Python，<s>但官方中文翻譯有時候我想睡的時候看不懂</s>，於是做了一個瀏覽器外掛：<b>串接 Claude API，用系統提示詞規範翻譯規則</b>，程式碼與變數名一律保留、業界慣用英文術語（array、closure、props）不硬翻、語氣要像台灣工程師寫的技術文件。</p>
+<p>工程上處理了三件事：</br>
+<b>行內程式碼先遮蔽成 token、翻完再還原</b>，避免被翻譯破壞；</br>
+段落<b>分批送出</b>控制單次請求量；</br>
+<b>以內容雜湊做快取</b>，重讀同一篇文章不重複燒 API 費用。</br>
+➜ 除了 Chrome 版，也移植成 iOS Safari 的 Userscript 版，手機上也能一鍵翻譯。
+      </p>
+      <div class="media-row">
+        <figure><img src="assets/fcc-desktop.png" alt="桌面版翻譯效果：術語正確、程式碼完整保留"><figcaption>翻譯效果：術語精準（字串串接／插值）、程式碼區塊原封不動</figcaption></figure>
+        <figure><img src="assets/fcc-ios.png" alt="iOS Safari 版懸浮按鈕介面"><figcaption>iOS 版：懸浮按鈕含設定、強制重翻與進度顯示</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="deploy">
+      <h3>Outlook 巨集：一鍵生成客人通知信</h3>
+      <span class="scene">VBA · Outlook · 與憑證產生器串接</span>
+      <p>
+        承接套票憑證產生器輸出的固定命名 PDF：</br>
+巨集<b>讀取檔名自動辨識客人姓名、訂單序號與入住日期</b>，一鍵生成制式通知郵件並自動夾帶對應 PDF，櫃檯人員只需要貼上客人信箱按下傳送。整條「開憑證 ➜ 寄通知」流程從多個手動步驟收斂成兩次點擊。</p>
+<p>以下為憑證產生器搭配outlook巨集使用的DEMO影片：</br>
+影片參照我個人習慣，使用剪貼簿一次複製資料貼上流程，即便使用不方便的筆電觸控板並放慢演示，依舊可以實現快速操作。
+      </p>
+      <div class="video-wrap">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/VBB3R3o3f90?si=ZcJoIQxqAQxXdAq-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="stamp">03 · Toolbox</span>
+      <h2>技術棧</h2>
+    </div>
+    <div class="stack">
+      <span>HTML / CSS / JavaScript</span>
+      <span>Python（discord.py）</span>
+      <span>Google Apps Script</span>
+      <span>n8n</span>
+      <span>Outlook VBA</span>
+      <span>GCP（VM / SSH）</span>
+      <span>pm2</span>
+      <span>Git / GitHub</span>
+      <span>Google Sheets 自動化</span>
+      <span>Claude API 整合</span>
+      <span>瀏覽器外掛 / Userscript</span>
+      <span>AI 協作開發</span>
+      <span class="learning">Python 進修中</span>
+    </div>
+    <p class="stack-note">我不是本科出身的工程師——我是那個在櫃檯遇到重複工作、會動手把它自動化的人。</br>學習系統邏輯、拆開流程，搭配 AI 把想法真的做到上線。</p>
+<b>我認為我辦得到，那我就願意嘗試。</b></p>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="stamp">04 · About</span>
+      <h2>關於我</h2>
+      <p>我的自動化不是從課本學來的，是從現場的<b>「好麻煩」</b>一個一個長出來的。</p>
+    </div>
+    <div class="timeline">
+      <div class="tl-item">
+        <span class="tl-time">2008–2013</span>
+        <div class="tl-body">
+          <b>馬偕醫護管理專科學校 · 護理科</b>
+          <p>醫院實習時發現自己有無法克服的嚴重暈血，放棄了護理師這條路，但留下了在高壓現場保持冷靜、照 SOP 處理緊急狀況的底子。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-time">2020–2024</span>
+        <div class="tl-body">
+          <b>旅館櫃檯接待 · 3 年 6 個月</b>
+          <p>每月平均接待 280 組客人，處理過深夜火災現場應變與各式客訴。這段時間讓我把飯店前台的每一條流程都摸得滾瓜爛熟。</br>當時就多次主動提案把手寫交接改為電子化，雖然沒被採納，但這顆種子留到了現在。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-time">2024</span>
+        <div class="tl-body">
+          <b>電話行銷</b>
+          <p>遠端工作的經驗讓我學會如何安排與規劃個人的工作時間，並協助主管進行追蹤名單管理，以Google Sheet進行電訪客戶的追蹤、回訪紀錄、意願等，將流程優化。</p>
+        </div>
+        </div>
+      <div class="tl-item">
+        <div class="tl-body">
+          <b>製造業行政助理</b>
+          <p>在進出口部門處理大量文件歸檔時，認真思考「怎麼讓重複的事變快」。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-time">2024/9–現在</span>
+        <div class="tl-body">
+          <b>桃園商旅 · 大夜櫃檯（現職）</b>
+          <p>本頁絕大多數工具的誕生地。</br>
+每天忙完手上的工作後，回想哪些地方最麻煩，覺得自己可以將這段流程進行優化，然後打開 AI 開始動手把它們一個個做成工具上線，憑證產生器、交班統計、車號解析都是這樣誕生的，當然還有一些無法展示的Google Sheet優化。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-time">2024–暫緩</span>
+        <div class="tl-body">
+          <b>空中大學</b>
+          <p>目前因個人規劃暫停，之後會挑不影響工作的時段繼續進修；現在的進修主力是在 freeCodeCamp 以及 Youtube 自學 Python，未來也打算繼續學習其他程式語言及 AI 工具。</p>
+        </div>
+      </div>
+    </div>
+    <p class="about-note">英文中等（大夜班常態接待外國旅客，TOEIC 持續進步，並搭配自己做的 n8n 考題 bot 加強中）、日文略懂，後續將會持續開發 n8n 考題 bot，目標是增加日文與其他我有興趣的語言檢定考題功能。</br>
+完整學經歷與聯絡資訊請見隨信附上的履歷。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="stamp">Contact</span>
+    <p class="big">如果貴團隊也有想省下來的重複流程，<br>我很樂意成為動手解決的那個人。</p>
+    <p>作品的程式碼、開發過程或任何實作細節，都歡迎與我聊聊。<br>如果你是先看到這個網頁的，也歡迎順路看看<a href="resume.html">我的履歷</a>。</p>
+    <a class="mail" href="mailto:sankikuya@gmail.com">charlie.t0227@gmail.com</a>
+    <p class="fine">本頁所有展示工具的客人資料與公司識別均已替換為示範內容。© 2026 蔡昕誼 Charlie & Claude</p>
+  </div>
+</footer>
+
+
+<script>
+(function(){
+  var btn = document.getElementById('themeToggle');
+  function get(){ try{ return localStorage.getItem('theme'); }catch(e){ return null; } }
+  function set(v){ try{ localStorage.setItem('theme', v); }catch(e){} }
+  function apply(t){
+    if(t === 'light'){ document.documentElement.setAttribute('data-theme','light'); btn.textContent = '\ud83c\udf19'; }
+    else{ document.documentElement.removeAttribute('data-theme'); btn.textContent = '\u2600\ufe0f'; }
+  }
+  var current = get() || 'dark';
+  apply(current);
+  btn.addEventListener('click', function(){
+    current = (current === 'light') ? 'dark' : 'light';
+    apply(current); set(current);
+  });
+})();
+</script>
+</body>
+</html>

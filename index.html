@@ -162,7 +162,26 @@
     background:#0c1119; border:1px solid var(--line);
     border-radius:10px; overflow:hidden;
   }
-  .media-row img{ width:100%; display:block; }
+  .media-row img{
+    width:100%; height:190px; object-fit:contain; display:block;
+    cursor:zoom-in; transition:opacity .15s ease;
+  }
+  .media-row img:hover{ opacity:.85; }
+  .media-row{ align-items:start; }
+  #lightbox{
+    position:fixed; inset:0; z-index:200; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(5,8,15,.93); padding:4vh 4vw; cursor:zoom-out;
+  }
+  #lightbox.show{ display:flex; }
+  #lightbox img{
+    max-width:100%; max-height:100%; border-radius:8px;
+    box-shadow:0 10px 50px rgba(0,0,0,.6);
+  }
+  #lightbox .tip{
+    position:absolute; bottom:18px; left:0; right:0; text-align:center;
+    color:#96a3bb; font-size:12px;
+  }
   .media-row figcaption{
     font-size:12px; color:var(--muted); padding:8px 12px;
     border-top:1px solid var(--line);
@@ -267,7 +286,7 @@
     <div class="cards">
 
       <div class="card">
-        <h3>取票憑證產生器</h3>
+        <h3>XPARK 取票憑證產生器</h3>
         <span class="scene">住宿套裝的入園憑證開立</span>
         <p><b>原本</b>要開 Word 逐欄修改日期、姓名、序號、票數，常漏改票數、日期或另存 PDF 時誤存成 docx。</p><p><b>現在</b>填一次表單即時預覽 A4 憑證，一鍵存成固定命名的 PDF，檔名同時是給 Outlook 巨集讀取的資料格式，存好切到 Outlook 按一下就自動生成客人通知信。</p>
         <div class="shift">
@@ -276,13 +295,13 @@
           <span class="after">1 分鐘內完成，格式零錯誤，也不怕漏改任何地方</span>
         </div>
         <div class="tags"><span class="tag">HTML/CSS/JS</span><span class="tag">列印排版</span><span class="tag">Outlook VBA 串接</span></div>
-        <div class="card-cta"><a class="btn primary" href="demos/ticket.html" target="_blank">▶ 立即操作</a></div>
+        <div class="card-cta"><a class="btn primary" href="demos/xpark.html" target="_blank">▶ 立即操作</a></div>
       </div>
 
       <div class="card">
         <h3>車號解析助手</h3>
         <span class="scene">每日接送派車的車牌登記</span>
-        <p>車行每天在 LINE 群傳來一整串格式混亂的派車訊息，但車輛一多就容易有疏漏。</p><p>這支 <b>Google Apps Script</b> 用正則解析訊息、把房號正規化後與班表雙向比對，自動填入車牌與加價註記，<b>比對失敗的會列出清單提醒人工檢查</b>。</p><p>此頁為互動模擬版：左側是模擬的 LINE 群組，一鍵複製訊息貼進外掛，體驗從「逐筆手 KEY」到「整串帶入」的差別。</br><b>示範訊息裡有一筆班表故意還沒 KEY 的派車</b>，看它怎麼被抓出來。</p>
+        <p>車行每天在 LINE 群傳來一整串格式混亂的派車訊息，但車輛一多就容易有疏漏。</p><p>這支 <b>Google Apps Script</b> 用正則解析訊息、把房號正規化後與班表雙向比對，自動填入車牌與加價註記，<b>比對失敗的會列出清單提醒人工檢查</b>。</p><p>此頁為互動模擬版：左側是模擬的 LINE 群組，一鍵複製訊息貼進外掛，體驗從「逐筆手 KEY」到「整串帶入」的差別。<br><b>示範訊息裡有一筆班表故意還沒 KEY 的派車</b>，看它怎麼被抓出來。</p>
         <div class="shift">
           <span class="before">逐筆人工核對抄寫，易漏易錯又耗時</span>
           <span class="arrow">➜</span>
@@ -295,7 +314,7 @@
       <div class="card">
         <h3>每日交班統計</h3>
         <span class="scene">大夜班結班報表</span>
-        <p>把住房率、續住、加床、合約統計、特殊房況整合成一個頁面，同時設計可以依照班表和特定條件，篩選出當天午晚餐用餐員工，自動計算並輸出制式交班文字一鍵複製。</br><b>已部署上 GCP 並限制公司 IP 存取</b>，讓公司兩台電腦共同讀寫儲存的房況資料，長期固定的房況不必每天重打。</p>
+        <p>把住房率、續住、加床、合約統計、特殊房況整合成一個頁面，同時設計可以依照班表和特定條件，篩選出當天午晚餐用餐員工，自動計算並輸出制式交班文字一鍵複製。<br><b>已部署上 GCP 並限制公司 IP 存取</b>，讓公司兩台電腦共同讀寫儲存的房況資料，長期固定的房況不必每天重打。</p>
         <div class="shift">
           <span class="before">每天複製前一天的資料逐一修改，還要算員工餐有多少人</span>
           <span class="arrow">➜</span>
@@ -335,9 +354,9 @@
       <span class="scene">Python · discord.py · GCP VM · SSH · pm2</span>
       <p>
         此為我個人某段時期閒暇時間的小樂趣，以 Python 打造兩種 bot：</p>
-<p><b>「小密蘇」</b>，我的個人頻道小秘書。</br>負責<b>社群自動化</b>，使用者按下按鈕即自動開啟一對一私人串、同步到管理頻道通知我有人開窗，審核通過後自動變更身分組，也能依照回覆發放指定連結，把原本要人工盯著的入群審核流程變成半自動。</p>
-<p><b>AI RP bot</b>，串接 API 並套用角色設定，實現簡易、有來有回的 AI 角色扮演對話。</br>
-回覆不再只是制式回覆，而是會透過使用者的訊息進行相應回覆。</br>
+<p><b>「小密蘇」</b>，我的個人頻道小秘書。<br>負責<b>社群自動化</b>，使用者按下按鈕即自動開啟一對一私人串、同步到管理頻道通知我有人開窗，審核通過後自動變更身分組，也能依照回覆發放指定連結，把原本要人工盯著的入群審核流程變成半自動。</p>
+<p><b>AI RP bot</b>，串接 API 並套用角色設定，實現簡易、有來有回的 AI 角色扮演對話。<br>
+回覆不再只是制式回覆，而是會透過使用者的訊息進行相應回覆。<br>
 開發流程為 Replit 搭配 GitHub 版控，push 至 <b>GCP 自架雲端伺服器（SSH 管理）</b>，以 <b>pm2</b> 常駐運行、自動重啟，24 小時不中斷。
       </p>
       <div class="media-row">
@@ -353,8 +372,8 @@
       <h3>n8n 每日多益練習 Bot</h3>
       <span class="scene">n8n · LINE Messaging API · AI 出題 · Google Sheets</span>
       <p>
-        兩條 workflow 組成的自學系統：</br>
-<b>排程流程</b>每天早上 7 點觸發 AI 生成多益考題、透過 LINE 推送給我，同時把題目與答案寫進 Google Sheets 留存；</br><b>核對流程</b>接收我回傳的作答（如 ABCBC），從試算表撈出正確答案比對，回覆當日成績與逐題解析。目前為個人使用版本，正在把 Switch 節點擴充為多人可用。
+        兩條 workflow 組成的自學系統：<br>
+<b>排程流程</b>每天早上 7 點觸發 AI 生成多益考題、透過 LINE 推送給我，同時把題目與答案寫進 Google Sheets 留存；<br><b>核對流程</b>接收我回傳的作答（如 ABCBC），從試算表撈出正確答案比對，回覆當日成績與逐題解析。目前為個人使用版本，正在把 Switch 節點擴充為多人可用。
       </p>
       <div class="media-row">
         <figure><img src="assets/n8n-schedule.png" alt="n8n 排程出題 workflow"><figcaption>排程流程：AI 出題 ➜ 寫入試算表 ➜ LINE 推送</figcaption></figure>
@@ -369,12 +388,13 @@
       <span class="scene">Chrome Extension · iOS Userscripts · Claude API · Prompt 設計</span>
       <p>
         我正在 freeCodeCamp 自學 Python，<s>但官方中文翻譯有時候我想睡的時候看不懂</s>，於是做了一個瀏覽器外掛：<b>串接 Claude API，用系統提示詞規範翻譯規則</b>，程式碼與變數名一律保留、業界慣用英文術語（array、closure、props）不硬翻、語氣要像台灣工程師寫的技術文件。</p>
-<p>工程上處理了三件事：</br>
-<b>行內程式碼先遮蔽成 token、翻完再還原</b>，避免被翻譯破壞；</br>
-段落<b>分批送出</b>控制單次請求量；</br>
-<b>以內容雜湊做快取</b>，重讀同一篇文章不重複燒 API 費用。</br>
+<p>工程上處理了三件事：<br>
+<b>行內程式碼先遮蔽成 token、翻完再還原</b>，避免被翻譯破壞；<br>
+段落<b>分批送出</b>控制單次請求量；<br>
+<b>以內容雜湊做快取</b>，重讀同一篇文章不重複燒 API 費用。<br>
 ➜ 除了 Chrome 版，也移植成 iOS Safari 的 Userscript 版，手機上也能一鍵翻譯。
       </p>
+      <p style="margin-top:14px;"><a class="btn ghost" href="https://github.com/ciao-is-charlie/fcc" target="_blank" rel="noopener">&lt;/&gt; 在 GitHub 查看原始碼</a></p>
       <div class="media-row">
         <figure><img src="assets/fcc-desktop.png" alt="桌面版翻譯效果：術語正確、程式碼完整保留"><figcaption>翻譯效果：術語精準（字串串接／插值）、程式碼區塊原封不動</figcaption></figure>
         <figure><img src="assets/fcc-ios.png" alt="iOS Safari 版懸浮按鈕介面"><figcaption>iOS 版：懸浮按鈕含設定、強制重翻與進度顯示</figcaption></figure>
@@ -385,9 +405,9 @@
       <h3>Outlook 巨集：一鍵生成客人通知信</h3>
       <span class="scene">VBA · Outlook · 與憑證產生器串接</span>
       <p>
-        承接套票憑證產生器輸出的固定命名 PDF：</br>
+        承接套票憑證產生器輸出的固定命名 PDF：<br>
 巨集<b>讀取檔名自動辨識客人姓名、訂單序號與入住日期</b>，一鍵生成制式通知郵件並自動夾帶對應 PDF，櫃檯人員只需要貼上客人信箱按下傳送。整條「開憑證 ➜ 寄通知」流程從多個手動步驟收斂成兩次點擊。</p>
-<p>以下為憑證產生器搭配outlook巨集使用的DEMO影片：</br>
+<p>以下為憑證產生器搭配outlook巨集使用的DEMO影片：<br>
 影片參照我個人習慣，使用剪貼簿一次複製資料貼上流程，即便使用不方便的筆電觸控板並放慢演示，依舊可以實現快速操作。
       </p>
       <div class="video-wrap">
@@ -419,8 +439,8 @@
       <span>AI 協作開發</span>
       <span class="learning">Python 進修中</span>
     </div>
-    <p class="stack-note">我不是本科出身的工程師——我是那個在櫃檯遇到重複工作、會動手把它自動化的人。</br>學習系統邏輯、拆開流程，搭配 AI 把想法真的做到上線。</p>
-<b>我認為我辦得到，那我就願意嘗試。</b></p>
+    <p class="stack-note">我不是本科出身的工程師——我是那個在櫃檯遇到重複工作、會動手把它自動化的人。<br>學習系統邏輯、拆開流程，搭配 AI 把想法真的做到上線。</p>
+<h3>我認為我辦得到，那我就願意嘗試。</h3></p>
   </div>
 </section>
 
@@ -443,7 +463,7 @@
         <span class="tl-time">2020–2024</span>
         <div class="tl-body">
           <b>旅館櫃檯接待 · 3 年 6 個月</b>
-          <p>每月平均接待 280 組客人，處理過深夜火災現場應變與各式客訴。這段時間讓我把飯店前台的每一條流程都摸得滾瓜爛熟。</br>當時就多次主動提案把手寫交接改為電子化，雖然沒被採納，但這顆種子留到了現在。</p>
+          <p>每月平均接待 280 組客人，處理過深夜火災現場應變與各式客訴。這段時間讓我把飯店前台的每一條流程都摸得滾瓜爛熟。<br>當時就多次主動提案把手寫交接改為電子化，雖然沒被採納，但這顆種子留到了現在。</p>
         </div>
       </div>
       <div class="tl-item">
@@ -463,7 +483,7 @@
         <span class="tl-time">2024/9–現在</span>
         <div class="tl-body">
           <b>桃園商旅 · 大夜櫃檯（現職）</b>
-          <p>本頁絕大多數工具的誕生地。</br>
+          <p>本頁絕大多數工具的誕生地。<br>
 每天忙完手上的工作後，回想哪些地方最麻煩，覺得自己可以將這段流程進行優化，然後打開 AI 開始動手把它們一個個做成工具上線，憑證產生器、交班統計、車號解析都是這樣誕生的，當然還有一些無法展示的Google Sheet優化。</p>
         </div>
       </div>
@@ -475,7 +495,7 @@
         </div>
       </div>
     </div>
-    <p class="about-note">英文中等（大夜班常態接待外國旅客，TOEIC 持續進步，並搭配自己做的 n8n 考題 bot 加強中）、日文略懂，後續將會持續開發 n8n 考題 bot，目標是增加日文與其他我有興趣的語言檢定考題功能。</br>
+    <p class="about-note">英文中等（大夜班常態接待外國旅客，TOEIC 持續進步，並搭配自己做的 n8n 考題 bot 加強中）、日文略懂，後續將會持續開發 n8n 考題 bot，目標是增加日文與其他我有興趣的語言檢定考題功能。<br>
 完整學經歷與聯絡資訊請見隨信附上的履歷。</p>
   </div>
 </section>
@@ -485,11 +505,31 @@
     <span class="stamp">Contact</span>
     <p class="big">如果貴團隊也有想省下來的重複流程，<br>我很樂意成為動手解決的那個人。</p>
     <p>作品的程式碼、開發過程或任何實作細節，都歡迎與我聊聊。<br>如果你是先看到這個網頁的，也歡迎順路看看<a href="resume.html">我的履歷</a>。</p>
-    <a class="mail" href="mailto:sankikuya@gmail.com">charlie.t0227@gmail.com</a>
+    <a class="mail" href="mailto:charlie.t0227@gmail.com">charlie.t0227@gmail.com</a>
     <p class="fine">本頁所有展示工具的客人資料與公司識別均已替換為示範內容。© 2026 蔡昕誼 Charlie & Claude</p>
   </div>
 </footer>
 
+
+<div id="lightbox"><img alt=""><span class="tip">點擊任意處關閉</span></div>
+
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  document.querySelectorAll('.media-row img').forEach(function(img){
+    img.addEventListener('click', function(){
+      lbImg.src = img.src;
+      lbImg.alt = img.alt || '';
+      lb.classList.add('show');
+    });
+  });
+  lb.addEventListener('click', function(){ lb.classList.remove('show'); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') lb.classList.remove('show');
+  });
+})();
+</script>
 
 <script>
 (function(){

@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>每日交班統計</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
+    font-size: 14px;
+    background: #eef1f5;
+    color: #232733;
+  }
+
+  header {
+    background: #1f2937;
+    color: #fff;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 {
+    font-size: 17px;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+  header .date-badge {
+    font-size: 12px;
+    color: #b8c2d4;
+  }
+
+  .layout {
+    display: flex;
+    gap: 18px;
+    padding: 18px;
+    align-items: flex-start;
+  }
+  .col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #dfe3ea;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card h2 {
+    font-size: 14px;
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #eceff3;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card h2 .tag {
+    font-size: 11px;
+    font-weight: normal;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: #fff;
+  }
+  .tag.green { background: #7fb069; }
+  .tag.purple { background: #8b7ec8; }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .field.full { grid-column: 1 / -1; }
+  label {
+    font-size: 12px;
+    color: #5b6472;
+  }
+  input, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    border: 1px solid #ccd2dc;
+    background: #fbfcfd;
+    outline: none;
+    width: 100%;
+  }
+  input:focus, textarea:focus {
+    border-color: #6c8cff;
+    background: #fff;
+  }
+  input:read-only {
+    background: #f1f4f8;
+    color: #3a6b3a;
+    font-weight: bold;
+  }
+
+  .subhead {
+    font-size: 12px;
+    color: #8590a1;
+    margin: 10px 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .subhead .add-btn {
+    cursor: pointer;
+    font-size: 12px;
+    color: #4a6fdc;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .subhead .add-btn:hover { text-decoration: underline; }
+
+  .list-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .list-row input { flex: 1; }
+  .list-row .del-btn {
+    flex: 0 0 auto;
+    width: 28px;
+    border: 1px solid #e3c3c3;
+    background: #fdf1f1;
+    color: #c0392b;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .list-row .del-btn:hover { background: #fbe4e4; }
+
+  textarea.output {
+    width: 100%;
+    min-height: 220px;
+    resize: vertical;
+    font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    background: #f8f9fb;
+    white-space: pre-wrap;
+  }
+
+  .copy-btn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 6px;
+    background: #2f6fed;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: #245bc7; }
+  .copy-btn.copied { background: #38a169; }
+
+  .drop-zone {
+    border: 2px dashed #c3cad6;
+    border-radius: 8px;
+    padding: 24px 12px;
+    text-align: center;
+    color: #8590a1;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .drop-zone.dragover {
+    border-color: #6c8cff;
+    background: #eef2ff;
+    color: #4a6fdc;
+  }
+  .drop-zone input[type=file] { display: none; }
+  .drop-zone .icon { font-size: 26px; margin-bottom: 6px; }
+  .drop-zone .filename {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #4a6fdc;
+    word-break: break-all;
+  }
+
+  .meal-result {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .meal-box {
+    flex: 1;
+    text-align: center;
+    padding: 14px 8px;
+    border-radius: 8px;
+    background: #f4f6fa;
+  }
+  .meal-box .num {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2f6fed;
+  }
+  .meal-box .label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  .pending-note {
+    font-size: 12px;
+    color: #b8860b;
+    background: #fff8e6;
+    border: 1px solid #f0dfa0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 860px) {
+    .layout { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>每日交班統計</h1>
+  <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+    <span class="date-badge" id="todayBadge"></span>
+    <span class="date-badge" id="syncStatus" style="font-size:11px;">連線雲端中...</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- 左欄：業績報表 -->
+  <div class="col">
+    <div class="card">
+      <h2>業績報表 <span class="tag green">上班日 / 前一天</span></h2>
+      <div class="grid2">
+        <div class="field">
+          <label>5:00前IH 住房</label>
+          <input type="number" id="ihRoom" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>5:00前IH 人數</label>
+          <input type="number" id="ihPax" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>N/S</label>
+          <input type="number" id="ns" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>ADD</label>
+          <input type="number" id="add" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>入住率（自動）</label>
+          <input type="text" id="rateGreen" readonly placeholder="自動計算">
+        </div>
+        <div class="field">
+          <label>公務住房</label>
+          <input type="number" id="govGreen" placeholder="填數字">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>業績報表 <span class="tag purple">今日 / 隔天</span></h2>
+      <div class="grid2">
+        <div class="field">
+          <label>CI</label>
+          <input type="number" id="ci" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>CI 人數</label>
+          <input type="number" id="ciPax" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>CO（退房）</label>
+          <input type="number" id="co" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>SO（續住，自動）</label>
+          <input type="text" id="so" readonly placeholder="自動計算">
+        </div>
+        <div class="field">
+          <label>入住率（自動）</label>
+          <input type="text" id="ratePurple" readonly placeholder="自動計算">
+        </div>
+        <div class="field">
+          <label>OOO（故障房）</label>
+          <input type="number" id="ooo" placeholder="填數字">
+        </div>
+        <div class="field">
+          <label>公務住房</label>
+          <input type="number" id="govPurple" placeholder="填數字">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>商務合約 / KOL 統計</h2>
+      <div id="contractList"></div>
+      <button class="subhead add-btn" onclick="addContractRow()">＋ 新增一行</button>
+    </div>
+
+    <div class="card">
+      <h2>特殊房況</h2>
+      <div id="specialList"></div>
+      <div class="subhead">
+        <button class="subhead add-btn" onclick="addRow('specialList','特殊房況內容')">＋ 新增一行</button>
+        <button class="subhead add-btn" style="color:#c0392b;" onclick="clearSpecialList()">清空全部</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>輸出內容</h2>
+      <textarea class="output" id="reportOutput" readonly></textarea>
+      <button class="copy-btn" id="copyReportBtn" onclick="copyText('reportOutput', 'copyReportBtn')">複製業績報表文字</button>
+    </div>
+  </div>
+
+  <!-- 右欄：用餐人數 -->
+  <div class="col">
+    <div class="card">
+      <h2>班表匯入</h2>
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📄</div>
+        <div>拖曳今日班表 Excel 到這裡，或點擊選擇檔案</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <div class="filename" id="fileName"></div>
+      </div>
+      <div class="pending-note" id="parseStatus">
+        拖曳或選擇本月班表 Excel，會自動抓出「今天」這一欄，計算午/晚餐人數。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>用餐人數</h2>
+      <div class="meal-result">
+        <div class="meal-box">
+          <div class="num" id="lunchCount">0</div>
+          <div class="label">午餐人數</div>
+        </div>
+        <div class="meal-box">
+          <div class="num" id="dinnerCount">0</div>
+          <div class="label">晚餐人數</div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="field">
+          <label>手動輸入午餐人數</label>
+          <input type="number" id="lunchManual" placeholder="填數字" oninput="updateMealOutput()">
+        </div>
+        <div class="field">
+          <label>手動輸入晚餐人數</label>
+          <input type="number" id="dinnerManual" placeholder="填數字" oninput="updateMealOutput()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>輸出內容</h2>
+      <textarea class="output" id="mealOutput" readonly style="min-height:120px;"></textarea>
+      <button class="copy-btn" id="copyMealBtn" onclick="copyText('mealOutput', 'copyMealBtn')">複製員工餐文字</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- 日期處理 ----------
+function fmtDate(d) { return (d.getMonth() + 1) + '/' + d.getDate(); }
+
+// 每次呼叫都重新取得當下日期，避免網頁掛著跨日後日期過期
+function getToday() { return new Date(); }
+function getTomorrow() {
+  const t = getToday();
+  const tm = new Date(t);
+  tm.setDate(t.getDate() + 1);
+  return tm;
+}
+
+function refreshDateBadge() {
+  document.getElementById('todayBadge').textContent = fmtDate(getToday()) + '（綠）／' + fmtDate(getTomorrow()) + '（紫）';
+}
+refreshDateBadge();
+// 每分鐘檢查一次，跨日時自動更新畫面上的日期與輸出文字
+setInterval(() => {
+  refreshDateBadge();
+  buildReportOutput();
+  updateMealOutput();
+}, 60 * 1000);
+
+// ---------- 業績報表計算 ----------
+const ihRoomEl = document.getElementById('ihRoom');
+const ihPaxEl = document.getElementById('ihPax');
+const nsEl = document.getElementById('ns');
+const addEl = document.getElementById('add');
+const rateGreenEl = document.getElementById('rateGreen');
+const govGreenEl = document.getElementById('govGreen');
+
+const ciEl = document.getElementById('ci');
+const ciPaxEl = document.getElementById('ciPax');
+const coEl = document.getElementById('co');
+const soEl = document.getElementById('so');
+const ratePurpleEl = document.getElementById('ratePurple');
+const oooEl = document.getElementById('ooo');
+const govPurpleEl = document.getElementById('govPurple');
+
+const TOTAL_ROOMS = 110;
+
+function fmtPercent(n) {
+  return (Math.round(n * 10000) / 100).toFixed(2) + '%';
+}
+
+function recalcReport() {
+  // 綠色入住率 = IH住房 / 110
+  const ihRoom = parseFloat(ihRoomEl.value);
+  if (!isNaN(ihRoom)) {
+    rateGreenEl.value = fmtPercent(ihRoom / TOTAL_ROOMS);
+  } else {
+    rateGreenEl.value = '';
+  }
+
+  // SO = IH住房 - CO
+  const co = parseFloat(coEl.value);
+  let so = null;
+  if (!isNaN(ihRoom) && !isNaN(co)) {
+    so = ihRoom - co;
+    soEl.value = so;
+  } else {
+    soEl.value = '';
+  }
+
+  // 紫色入住率 = (CI + SO) / 110
+  const ci = parseFloat(ciEl.value);
+  if (!isNaN(ci) && so !== null) {
+    ratePurpleEl.value = fmtPercent((ci + so) / TOTAL_ROOMS);
+  } else {
+    ratePurpleEl.value = '';
+  }
+
+  buildReportOutput();
+}
+
+// ---------- 動態列表（特殊房況 / 商務合約）----------
+const FULL_STORAGE_KEY = 'dailyReport_fullState';
+
+// ===== 雲端同步設定（VM）=====
+const SYNC_SERVER = 'http://35.239.253.19:8787/status';
+const SYNC_API_KEY = 'hR7mK2xP9qLw4nT8vB3cF6jD1sG5aZ0y';
+// ============================
+
+let syncSaveTimer = null;
+let syncReady = false; // 初始雲端載入完成前，不觸發存檔，避免空白狀態蓋掉雲端資料
+
+function setSyncStatus(text, ok) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = ok ? '#8fe3a0' : '#ff9d9d';
+}
+
+function addRow(containerId, placeholder, initialValue) {
+  const container = document.getElementById(containerId);
+  const row = document.createElement('div');
+  row.className = 'list-row';
+  row.innerHTML = `
+    <input type="text" placeholder="${placeholder}" value="${initialValue || ''}" oninput="buildReportOutput();">
+    <button class="del-btn" onclick="this.parentElement.remove(); buildReportOutput(); scheduleSync();">×</button>
+  `;
+  container.appendChild(row);
+}
+
+function getSpecialValues() {
+  return Array.from(document.querySelectorAll('#specialList input')).map(i => i.value);
+}
+
+// ---------- 整頁狀態收集與還原 ----------
+const SYNC_FIELD_IDS = ['ihRoom','ihPax','ns','add','govGreen','ci','ciPax','co','ooo','govPurple','lunchManual','dinnerManual'];
+
+function collectFullState() {
+  const fields = {};
+  SYNC_FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) fields[id] = el.value;
+  });
+  const contracts = Array.from(document.querySelectorAll('#contractList .list-row')).map(row => ({
+    company: row.querySelector('.contract-company').value,
+    count: row.querySelector('.contract-count').value
+  }));
+  return { fields, special: getSpecialValues(), contracts };
+}
+
+function renderSpecialList(values) {
+  const container = document.getElementById('specialList');
+  container.innerHTML = '';
+  if (values && Array.isArray(values) && values.length > 0) {
+    values.forEach(v => addRow('specialList', '特殊房況內容', v));
+    while (container.children.length < 6) addRow('specialList', '特殊房況內容');
+  } else {
+    for (let i = 0; i < 6; i++) addRow('specialList', '特殊房況內容');
+  }
+}
+
+function renderContractList(rows) {
+  const container = document.getElementById('contractList');
+  container.innerHTML = '';
+  if (rows && Array.isArray(rows) && rows.length > 0) {
+    rows.forEach(r => addContractRow(r.company, r.count));
+    while (container.children.length < 6) addContractRow();
+  } else {
+    for (let i = 0; i < 6; i++) addContractRow();
+  }
+}
+
+function applyFullState(state) {
+  if (!state) return;
+  const f = state.fields || {};
+  SYNC_FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && f[id] !== undefined) el.value = f[id];
+  });
+  renderSpecialList(state.special || []);
+  renderContractList(state.contracts || []);
+  recalcReport();
+  updateMealOutput();
+  document.getElementById('lunchCount').textContent = f.lunchManual || 0;
+  document.getElementById('dinnerCount').textContent = f.dinnerManual || 0;
+}
+
+// ---------- 同步：存檔 ----------
+function scheduleSync() {
+  const state = collectFullState();
+  // 本機永遠先存一份（備援，斷網也不掉資料）
+  try {
+    localStorage.setItem(FULL_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('無法儲存到本機', e);
+  }
+  if (!syncReady) return; // 初始載入未完成前不上傳
+  // 防抖：停止輸入1秒後才送出，避免每打一個字就發請求
+  clearTimeout(syncSaveTimer);
+  syncSaveTimer = setTimeout(() => {
+    setSyncStatus('同步中...', true);
+    fetch(SYNC_SERVER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': SYNC_API_KEY },
+      body: JSON.stringify({ state: collectFullState() })
+    })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(() => setSyncStatus('已同步到雲端 ✓', true))
+    .catch(err => {
+      console.error('雲端同步失敗', err);
+      setSyncStatus('雲端同步失敗（內容已存在本機），請檢查網路或VM狀態', false);
+    });
+  }, 1000);
+}
+
+// 舊函式名稱保留為別名，維持既有呼叫點相容
+function saveSpecialList() { scheduleSync(); }
+
+// ---------- 同步：載入 ----------
+function loadFullState() {
+  // 先用本機資料立即顯示（不等網路），再嘗試從雲端讀取最新版覆蓋
+  let localState = null;
+  try {
+    const raw = localStorage.getItem(FULL_STORAGE_KEY);
+    if (raw) localState = JSON.parse(raw);
+  } catch (e) {
+    console.error('讀取本機資料失敗', e);
+  }
+  if (localState) applyFullState(localState);
+
+  setSyncStatus('讀取雲端資料中...', true);
+  fetch(SYNC_SERVER, {
+    method: 'GET',
+    headers: { 'X-Api-Key': SYNC_API_KEY }
+  })
+  .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+  .then(data => {
+    if (data && data.state) {
+      applyFullState(data.state);
+      try { localStorage.setItem(FULL_STORAGE_KEY, JSON.stringify(data.state)); } catch (e) {}
+      setSyncStatus('已載入雲端資料 ✓' + (data.updated_at ? '（最後更新 ' + data.updated_at.replace('T', ' ') + '）' : ''), true);
+    } else {
+      setSyncStatus('雲端尚無資料，開始編輯後會自動同步', true);
+    }
+    syncReady = true;
+  })
+  .catch(err => {
+    console.error('雲端讀取失敗，使用本機資料', err);
+    setSyncStatus('無法連線雲端，目前顯示的是本機資料（修改仍會嘗試同步）', false);
+    syncReady = true;
+  });
+}
+
+function clearSpecialList() {
+  if (!confirm('確定要清空所有特殊房況內容嗎？（雲端同步後，其他電腦也會被清空）')) return;
+  document.getElementById('specialList').innerHTML = '';
+  for (let i = 0; i < 6; i++) addRow('specialList', '特殊房況內容');
+  scheduleSync();
+  buildReportOutput();
+}
+
+function addContractRow(company, count) {
+  const container = document.getElementById('contractList');
+  const row = document.createElement('div');
+  row.className = 'list-row';
+  row.innerHTML = `
+    <input type="text" class="contract-company" placeholder="公司/姓名" value="${company || ''}" oninput="buildReportOutput()" style="flex:2;">
+    <input type="number" class="contract-count" placeholder="間數" value="${count !== undefined ? count : ''}" oninput="buildReportOutput()" style="flex:1;">
+    <button class="del-btn" onclick="this.parentElement.remove(); buildReportOutput();">×</button>
+  `;
+  container.appendChild(row);
+}
+
+function initLists() {
+  // 先建出預設空列表，loadFullState 讀到資料後會覆蓋
+  renderSpecialList(null);
+  renderContractList(null);
+  loadFullState();
+}
+
+function getListValues(containerId) {
+  const inputs = document.querySelectorAll('#' + containerId + ' input');
+  return Array.from(inputs).map(i => i.value.trim()).filter(v => v !== '');
+}
+
+function getContractValues() {
+  const rows = document.querySelectorAll('#contractList .list-row');
+  const result = [];
+  rows.forEach(row => {
+    const company = row.querySelector('.contract-company').value.trim();
+    const count = row.querySelector('.contract-count').value.trim();
+    if (company !== '' && count !== '') {
+      result.push(`${company}*${count}`);
+    } else if (company !== '') {
+      result.push(company);
+    }
+  });
+  return result;
+}
+
+// ---------- 組合輸出文字 ----------
+function buildReportOutput() {
+  const lines = [];
+
+  lines.push(fmtDate(getToday()));
+  if (ihRoomEl.value !== '' || ihPaxEl.value !== '') {
+    lines.push(`5:00前IH: ${ihRoomEl.value || ''}/${ihPaxEl.value || ''}`);
+  }
+  if (nsEl.value !== '') lines.push(`N/S: ${nsEl.value}`);
+  if (addEl.value !== '') lines.push(`ADD: ${addEl.value}`);
+  if (rateGreenEl.value !== '') lines.push(`入住率: ${rateGreenEl.value}`);
+  if (govGreenEl.value !== '') lines.push(`公務住房: ${govGreenEl.value}`);
+
+  lines.push('------------------');
+
+  lines.push(fmtDate(getTomorrow()));
+  if (ciEl.value !== '' || ciPaxEl.value !== '') {
+    lines.push(`CI: ${ciEl.value || ''}/${ciPaxEl.value || ''}`);
+  }
+  if (coEl.value !== '') lines.push(`CO: ${coEl.value}`);
+  if (soEl.value !== '') lines.push(`SO: ${soEl.value}`);
+  if (ratePurpleEl.value !== '') lines.push(`入住率: ${ratePurpleEl.value}`);
+  if (oooEl.value !== '') lines.push(`OOO: ${oooEl.value}`);
+  if (govPurpleEl.value !== '') lines.push(`公務住房: ${govPurpleEl.value}`);
+
+  lines.push('');
+  lines.push('@主管A    @主管B');
+
+  const specials = getListValues('specialList');
+  if (specials.length > 0) {
+    lines.push('');
+    specials.forEach(s => lines.push(s));
+  }
+
+  const contracts = getContractValues();
+  if (contracts.length > 0) {
+    lines.push('');
+    contracts.forEach(c => lines.push(c));
+  }
+
+  document.getElementById('reportOutput').value = lines.join('\n');
+}
+
+// ---------- 用餐人數 ----------
+function updateMealOutput() {
+  const lunch = document.getElementById('lunchManual').value;
+  const dinner = document.getElementById('dinnerManual').value;
+
+  document.getElementById('lunchCount').textContent = lunch || 0;
+  document.getElementById('dinnerCount').textContent = dinner || 0;
+
+  const lines = [];
+  lines.push(fmtDate(getToday()) + '員工餐');
+  lines.push(`午餐人數：${lunch || 0}`);
+  lines.push(`晚餐人數：${dinner || 0}`);
+  lines.push('');
+  lines.push('@主管A @主管B');
+
+  document.getElementById('mealOutput').value = lines.join('\n');
+}
+
+// ---------- 複製功能 ----------
+function copyText(textareaId, btnId) {
+  const el = document.getElementById(textareaId);
+  el.select();
+  el.setSelectionRange(0, 999999);
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = document.getElementById(btnId);
+    const original = btn.textContent;
+    btn.textContent = '已複製 ✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+// ---------- 拖曳班表區塊（UI先行，邏輯待補）----------
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileNameEl = document.getElementById('fileName');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+function handleFile(file) {
+  fileNameEl.textContent = '已選擇：' + file.name + '，解析中...';
+  const statusEl = document.getElementById('parseStatus');
+  statusEl.textContent = '解析中，請稍候...';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const result = parseSchedule(workbook);
+      applyMealResult(result);
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = '解析失敗：' + err.message + '（請確認檔案格式，或手動輸入人數）';
+      statusEl.style.color = '#c0392b';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ---------- 班別代號對照表 ----------
+const SHIFT_LEGEND = {
+  // 大寫（正職）
+  A: [630, 1500], B: [1430, 2300], C: [2230, 700+2400], D: [900, 1730],
+  E: [800, 1700], F: [700, 1600], G: [1000, 1900], H: [1100, 1930],
+  I: [900, 1800], J: [1300, 2400], K: [800, 1900], L: [700, 1530],
+  M: [1200, 2030], N: [500, 1400], O: [530, 1400], P: [1100, 2000],
+  Q: [1000, 1830], R: [1130, 2030], S: [1200, 2100],
+  U: [700, 2000], V: [1300, 2200], W: [400, 1300], Y: [1230, 2100],
+  // 小寫（兼職 PT）
+  a: [500, 1030], b: [530, 1200], c: [530, 1300], d: [700, 1200],
+  e: [700, 1300], f: [700, 1400], g: [700, 1500], h: [800, 1500],
+  i: [900, 1330], j: [900, 1630], k: [900, 1700], l: [1530, 2030],
+  m: [1530, 2100], n: [1600, 2030], o: [1600, 2100], p: [1630, 2030],
+  q: [1630, 2100], r: [1700, 2030], s: [1700, 2100], t: [1730, 2030],
+  u: [1730, 2100], v: [900, 1500], w: [1800, 2100], y: [1830, 2030],
+  z: [1830, 2100]
+};
+// Z 為分段班（跨兩段時間）
+const Z_SPLIT = [[1100, 1500], [1630, 2030]];
+
+// 不算上班（不吃飯）的代號
+const NOT_WORKING = new Set(['X', 'x', '!', '事', '喪', '小o', '特', '#REF!', '']);
+// 忽略、不計算的代號
+const IGNORE_CODES = new Set(['T']);
+
+const LUNCH_WINDOW = [1200, 1300];   // 12:00-13:00
+const DINNER_WINDOW = [1730, 1930];  // 17:30-19:30
+const LUNCH_CENTER = (LUNCH_WINDOW[0] + LUNCH_WINDOW[1]) / 2;
+const DINNER_CENTER = (DINNER_WINDOW[0] + DINNER_WINDOW[1]) / 2;
+const MIN_WORK_MINUTES = 240;        // 上班需大於4小時才算需要用餐
+
+function overlaps(a, b) {
+  return Math.max(a[0], b[0]) < Math.min(a[1], b[1]);
+}
+
+function totalDuration(ranges) {
+  return ranges.reduce((sum, rg) => sum + (rg[1] - rg[0]), 0);
+}
+
+// 解析像 "8-14"、"9-1130"、"0800- 1200" 這類手動時段字串
+function parseManualRange(str) {
+  const cleaned = str.replace(/\s+/g, '');
+  const parts = cleaned.split('-');
+  if (parts.length !== 2) return null;
+  function toMinutesLike(p) {
+    if (!/^\d+$/.test(p)) return null;
+    if (p.length <= 2) return parseInt(p, 10) * 100; // e.g. "8" -> 800, "14" -> 1400
+    if (p.length === 3) return parseInt(p[0], 10) * 100 + parseInt(p.slice(1), 10); // "930" -> 930
+    if (p.length === 4) return parseInt(p, 10); // "1130" -> 1130
+    return null;
+  }
+  const start = toMinutesLike(parts[0]);
+  const end = toMinutesLike(parts[1]);
+  if (start === null || end === null) return null;
+  return [start, end];
+}
+
+// 取得某代號的涵蓋時段（可能是多段），回傳 [[start,end], ...] 或 null（忽略/不上班）
+function resolveShiftRanges(rawCode) {
+  if (rawCode === null || rawCode === undefined) return null;
+  let code = String(rawCode).trim();
+  if (code === '') return null;
+
+  if (IGNORE_CODES.has(code)) return null;
+  if (NOT_WORKING.has(code)) return null;
+
+  // Q+ 當作 Q
+  if (code === 'Q+' || /^Q\+/.test(code)) code = 'Q';
+  // 外L 當作 L
+  if (code === '外L') code = 'L';
+  // F*1 / T*1 這類尾綴，取代號本身
+  const starMatch = code.match(/^([A-Za-z]+)\*\d+$/);
+  if (starMatch) code = starMatch[1];
+
+  if (code === 'Z') return Z_SPLIT;
+
+  if (SHIFT_LEGEND[code]) return [SHIFT_LEGEND[code]];
+
+  // 嘗試解析手動時段格式
+  const manual = parseManualRange(code);
+  if (manual) return [manual];
+
+  return null; // 無法辨識，當作不計算
+}
+
+// ---------- 解析整份班表 ----------
+function parseSchedule(workbook) {
+  let sheetName = workbook.SheetNames.find(n => n.includes('排班'));
+  if (!sheetName) sheetName = workbook.SheetNames[0];
+  const ws = workbook.Sheets[sheetName];
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // 找出日期列：該列中 Date 物件最多的那一列
+  let dateRowIdx = -1;
+  let maxDateCount = 0;
+  for (let r = range.s.r; r <= Math.min(range.e.r, 30); r++) {
+    let count = 0;
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell && cell.t === 'd') count++;
+    }
+    if (count > maxDateCount) { maxDateCount = count; dateRowIdx = r; }
+  }
+  if (dateRowIdx === -1 || maxDateCount === 0) {
+    throw new Error('找不到日期列，請確認班表格式');
+  }
+
+  // 找出今天對應的欄位
+  const now = getToday();
+  const todayDay = now.getDate();
+  const todayMonth = now.getMonth() + 1;
+  let targetCol = -1;
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: dateRowIdx, c })];
+    if (cell && cell.t === 'd' && cell.v instanceof Date) {
+      if (cell.v.getDate() === todayDay && (cell.v.getMonth() + 1) === todayMonth) {
+        targetCol = c;
+        break;
+      }
+    }
+  }
+  if (targetCol === -1) {
+    throw new Error('班表中找不到今天（' + todayMonth + '/' + todayDay + '）的欄位，請確認是否為本月班表');
+  }
+
+  // 找出姓名欄位（通常是日期列往左第一個文字密集欄，這裡假設固定往左找，或用 col 2 的慣例）
+  // 這裡採用彈性策略：日期列所在欄的左方，找出資料列開始位置
+  const idRowIdx = dateRowIdx + 1;     // 日期列下一列＝員編列，該列有「人員」標題
+  const dataStartRow = dateRowIdx + 2; // 員工資料從再下一列開始
+
+  // 決定姓名欄：找「人員」標題文字所在欄位
+  let nameCol = -1;
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: idRowIdx, c })];
+    if (cell && String(cell.v).trim() === '人員') { nameCol = c; break; }
+  }
+  if (nameCol === -1) nameCol = 1; // 找不到就預設第2欄（0-indexed = 1）
+
+  let lunchCount = 0;
+  let dinnerCount = 0;
+  let workedCount = 0;
+  let blankStreak = 0;
+  const details = [];
+
+  for (let r = dataStartRow; r <= range.e.r; r++) {
+    // 判斷是否為完全空白列（姓名欄與所有日期欄皆空）
+    let rowHasAny = false;
+    const nameCell = ws[XLSX.utils.encode_cell({ r, c: nameCol })];
+    if (nameCell && nameCell.v !== undefined && nameCell.v !== null && String(nameCell.v).trim() !== '') {
+      rowHasAny = true;
+    }
+    if (!rowHasAny) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const cc = ws[XLSX.utils.encode_cell({ r, c })];
+        if (cc && cc.v !== undefined && cc.v !== null && String(cc.v).trim() !== '') { rowHasAny = true; break; }
+      }
+    }
+
+    if (!rowHasAny) {
+      blankStreak++;
+      if (blankStreak >= 3) break; // 連續三列全空，視為員工名單結束（名單中間偶有1-2列的部門分隔空列）
+      continue;
+    }
+    blankStreak = 0;
+
+    const nameVal = nameCell ? String(nameCell.v).trim() : '';
+    if (!nameVal) continue; // 部門標題列等，跳過
+
+    const shiftCell = ws[XLSX.utils.encode_cell({ r, c: targetCol })];
+    const rawCode = shiftCell ? shiftCell.v : null;
+    const ranges = resolveShiftRanges(rawCode);
+    if (!ranges) continue;
+
+    // 上班時數需超過4小時才計入用餐人數
+    if (totalDuration(ranges) <= MIN_WORK_MINUTES) {
+      details.push({ name: nameVal, code: rawCode, skip: true, reason: '未滿4小時' });
+      continue;
+    }
+
+    workedCount++;
+    let isLunch = false, isDinner = false;
+    ranges.forEach(rg => {
+      if (overlaps(rg, LUNCH_WINDOW)) isLunch = true;
+      if (overlaps(rg, DINNER_WINDOW)) isDinner = true;
+    });
+
+    // 若兩餐都跨到，只能擇一：比較「上班開始時間」離哪一餐中心點較遠，就吃那一餐
+    if (isLunch && isDinner) {
+      const shiftStart = ranges[0][0];
+      const distToLunch = Math.abs(shiftStart - LUNCH_CENTER);
+      const distToDinner = Math.abs(shiftStart - DINNER_CENTER);
+      if (distToDinner > distToLunch) {
+        isLunch = false;
+      } else {
+        isDinner = false;
+      }
+    }
+
+    if (isLunch) lunchCount++;
+    if (isDinner) dinnerCount++;
+    details.push({ name: nameVal, code: rawCode, isLunch, isDinner });
+  }
+
+  return { lunchCount, dinnerCount, workedCount, sheetName, details };
+}
+
+function applyMealResult(result) {
+  document.getElementById('lunchManual').value = result.lunchCount;
+  document.getElementById('dinnerManual').value = result.dinnerCount;
+  updateMealOutput();
+  scheduleSync();
+
+  const statusEl = document.getElementById('parseStatus');
+  statusEl.style.color = '#2f6f2f';
+  statusEl.textContent = `解析成功（工作表：${result.sheetName}）－ 今日上班共 ${result.workedCount} 人，午餐 ${result.lunchCount} 人、晚餐 ${result.dinnerCount} 人。已自動帶入下方欄位，如有需要可手動修正。`;
+}
+
+// ---------- 事件綁定 ----------
+[ihRoomEl, ihPaxEl, nsEl, addEl, govGreenEl, ciEl, ciPaxEl, coEl, oooEl, govPurpleEl]
+  .forEach(el => el.addEventListener('input', recalcReport));
+
+// 全域輸入監聽：任何欄位變動（含動態新增的列）都觸發雲端同步
+document.addEventListener('input', (e) => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && !e.target.readOnly) {
+    scheduleSync();
+  }
+});
+
+// ---------- 初始化 ----------
+initLists();
+recalcReport();
+updateMealOutput();
+</script>
+
+</body>
+</html>

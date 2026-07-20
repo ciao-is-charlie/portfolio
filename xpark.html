@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XPARK 取票憑證產生器</title>
+<style>
+  :root{
+    --ink:#2b2b2b;
+    --paper:#ffffff;
+    --bg:#eef0f3;
+    --panel:#ffffff;
+    --accent:#1f5f8b;
+    --accent-dark:#174a6d;
+    --line:#d8dce2;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+
+  /* ===== 工具列與版面 ===== */
+  .app{
+    display:flex;
+    gap:24px;
+    padding:24px;
+    max-width:1280px;
+    margin:0 auto;
+    align-items:flex-start;
+  }
+  .panel{
+    width:330px;
+    flex-shrink:0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px 20px;
+    position:sticky;
+    top:24px;
+  }
+  .panel h1{
+    font-size:17px;
+    margin-bottom:4px;
+  }
+  .panel .sub{
+    font-size:12px;
+    color:#777;
+    margin-bottom:18px;
+    line-height:1.5;
+  }
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    padding:8px 10px;
+    font-size:14px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-family:inherit;
+  }
+  .field input:focus{
+    outline:2px solid var(--accent);
+    outline-offset:1px;
+    border-color:var(--accent);
+  }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+  .tickets{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .hint{
+    font-size:12px;
+    color:#888;
+    background:#f5f6f8;
+    border-radius:6px;
+    padding:8px 10px;
+    line-height:1.6;
+    margin:6px 0 16px;
+  }
+  .btn{
+    width:100%;
+    padding:12px;
+    font-size:15px;
+    font-weight:700;
+    color:#fff;
+    background:var(--accent);
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .btn:hover{ background:var(--accent-dark); }
+  .divider{
+    border:none;
+    border-top:1px solid var(--line);
+    margin:16px 0;
+  }
+
+
+  .sheet-watermark-demo{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%) rotate(-24deg);
+    font-size:80mm; font-weight:900; color:rgba(31,95,139,.07);
+    letter-spacing:8mm; z-index:0; pointer-events:none;
+  }
+  .sheet-logo-demo{
+    width:60mm; margin:0 auto 6mm; text-align:center;
+    border:2.5px solid #1f5f8b; border-radius:4px; padding:3mm 0;
+    font-size:15pt; font-weight:800; color:#1f5f8b; letter-spacing:2px; line-height:1.4;
+  }
+  .sheet-logo-demo span{ display:block; font-size:8pt; letter-spacing:4px; font-weight:600; color:#5b87a6; }
+  /* ===== A4 憑證 ===== */
+  .sheet-wrap{ flex:1; min-width:0; }
+  .sheet{
+    position:relative;
+    overflow:hidden;
+    width:210mm;
+    height:297mm;   /* 固定 A4 尺寸 */
+    background:var(--paper);
+    margin:0 auto;
+    padding:14mm 24mm 20mm;
+    box-shadow:0 2px 14px rgba(0,0,0,.15);
+    font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC","Noto Sans TC",sans-serif;
+    color:#000;
+    font-size:14pt;
+    line-height:2;
+  }
+  .sheet-logo{
+    display:block;
+    width:46mm;
+    margin:0 auto 6mm;
+  }
+  .sheet-watermark{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:125mm;
+    height:auto;
+    z-index:0;
+    opacity:.38;
+    pointer-events:none;
+  }
+  .sheet-content{
+    position:relative;
+    z-index:1;
+  }
+  .doc-title{
+    text-align:center;
+    font-size:22pt;
+    font-weight:bold;
+    margin-bottom:10mm;
+  }
+  .doc-line{ margin-bottom:2mm; }
+  .name-slot{
+    display:inline-block;
+    min-width:42mm;
+    text-align:center;
+    font-weight:bold;
+    padding:0 4mm;
+  }
+  .tickets-block{ margin:4mm 0 12mm 0; }
+  .tickets-block .doc-line{
+    margin-bottom:1mm;
+    letter-spacing:4.1pt;   /* 依 docx 原始字距，拉開避免擁擠 */
+  }
+  .ticket-num{
+    display:inline-block;
+    min-width:9mm;          /* 固定張數欄寬，讓「張」字上下對齊 */
+    text-align:center;
+  }
+  .notes{ margin-top:4mm; }
+  .notes .doc-line{
+    font-size:12pt;
+    line-height:2;
+    margin-bottom:1mm;
+  }
+  .sign-block{
+    margin-top:22mm;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10mm;
+  }
+  .sign-left{ text-align:left; }
+  .hotel-name{ font-size:11pt; font-weight:bold; }
+  .issue-date{ font-size:11pt; margin-top:13mm; }
+  .footer-warning{
+    margin-top:2.5mm;
+    font-size:11pt;
+    color:#4B4B4B;
+  }
+  .stamp-box{
+    width:60mm;
+    height:50mm;
+    border:1.5px solid #000;
+    flex-shrink:0;
+    margin-top:-3mm;   /* 框頂略高於旅館名，同原稿 */
+  }
+
+  /* ===== 列印（存成 PDF） ===== */
+  @page{ size:A4; margin:0; }
+  @media print{
+    body{ background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .panel{ display:none; }
+    .app{ padding:0; display:block; max-width:none; }
+    .sheet{
+      box-shadow:none;
+      margin:0;
+      width:210mm;
+      height:297mm;
+    }
+  }
+
+  @media (max-width:900px){
+    .app{ flex-direction:column; }
+    .panel{ width:100%; position:static; }
+    .sheet-wrap{ overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- 編輯面板（列印時隱藏） -->
+  <aside class="panel">
+    <h1>XPARK 取票憑證產生器</h1>
+    <p class="sub">填寫下方欄位，右側憑證即時更新。完成後按「儲存為 PDF」，在列印視窗選擇「另存為 PDF」即可。</p>
+
+    <div class="field">
+      <label for="inpName">姓名</label>
+      <input type="text" id="inpName" value="">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="inpCheckin">入住日期</label>
+        <input type="date" id="inpCheckin">
+      </div>
+      <div class="field">
+        <label for="inpCheckout">退房日期</label>
+        <input type="date" id="inpCheckout">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="inpOrder">訂單序號</label>
+      <input type="text" id="inpOrder" value="">
+    </div>
+
+    <div class="tickets">
+      <div class="field">
+        <label for="inpAdult">成人票（張）</label>
+        <input type="text" id="inpAdult" inputmode="numeric" value="">
+      </div>
+      <div class="field">
+        <label for="inpStudent">學生票（張）</label>
+        <input type="text" id="inpStudent" inputmode="numeric" value="">
+      </div>
+      <div class="field">
+        <label for="inpChild">孩童票（張）</label>
+        <input type="text" id="inpChild" inputmode="numeric" value="">
+      </div>
+      <div class="field">
+        <label for="inpSenior">敬老票（張）</label>
+        <input type="text" id="inpSenior" inputmode="numeric" value="">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="field">
+      <label for="inpIssue">開立日期（預設為今天）</label>
+      <input type="date" id="inpIssue">
+    </div>
+
+    <p class="hint">票券兌換＆使用期間會自動等於入住～退房日期，不需另外填寫。</p>
+
+    <button class="btn" id="btnPrint" type="button">儲存為 PDF</button>
+    <p class="hint" style="margin-top:10px">按下後在視窗中選「另存為 PDF」→「儲存」即可，檔名會自動帶入「序號_姓名_入住日期」（Outlook 巨集靠檔名自動辨識資料，請勿改名）。存好後切到 Outlook 按巨集按鈕即可自動建立通知郵件。瀏覽器會記住你的選擇，之後就是兩個點擊的事。</p>
+  </aside>
+
+  <!-- A4 憑證 -->
+  <main class="sheet-wrap">
+    <div class="sheet" id="sheet">
+      <div class="sheet-watermark-demo">DEMO</div>
+      <div class="sheet-content">
+      <div class="sheet-logo-demo">示範商務旅館<span>DEMO HOTEL</span></div>
+      <div class="doc-title">住宿證明書</div>
+
+      <p class="doc-line">茲證明　<span class="name-slot" id="outName">　　　</span>　先生/小姐，</p>
+
+      <p class="doc-line">自<span id="outCheckin"></span>至<span id="outCheckout"></span>住宿於示範商務旅館。</p>
+
+      <p class="doc-line">訂房序號：<span id="outOrder"></span>　經開立此據，以茲證明。</p>
+
+      <div class="tickets-block">
+        <p class="doc-line">◆成人票: <span class="ticket-num" id="outAdult"></span> 張</p>
+        <p class="doc-line">◆學生票: <span class="ticket-num" id="outStudent"></span> 張</p>
+        <p class="doc-line">◆孩童票: <span class="ticket-num" id="outChild"></span> 張</p>
+        <p class="doc-line">◆敬老票: <span class="ticket-num" id="outSenior"></span> 張</p>
+      </div>
+
+      <div class="notes">
+        <p class="doc-line">*僅提供住宿XPARK套裝『水下奇遇優惠專案』憑單換票使用。</p>
+        <p class="doc-line">*票券兌換&amp;使用期間: <span id="outUseStart"></span>至<span id="outUseEnd"></span>。</p>
+        <p class="doc-line">* 18歲以上成人購買學生票須出示學生證；12-18歲出示身分證明文件即可。</p>
+        <p class="doc-line">*入園營業時間依照XPARK官方網站為主。</p>
+        <p class="doc-line">*須持本住宿證明券及訂房人證件，至入口閘門左側櫃台兌換入園門票。</p>
+        <p class="doc-line">*成人票券可以折抵停車，折抵辦法依照XPARK規定辦理。</p>
+        <p class="doc-line">* XPARK現場不提供換票/加購服務，現場更動以原價自行購買。</p>
+      </div>
+
+      <div class="sign-block">
+        <div class="sign-left">
+          <p class="hotel-name">示範商務旅館</p>
+          <p class="issue-date">西元 <span id="outIssue"></span></p>
+          <p class="footer-warning">不得轉售，翻印必究</p>
+        </div>
+        <div class="stamp-box" aria-label="公司章用印處"></div>
+      </div>
+      </div><!-- /sheet-content -->
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // 將 yyyy-mm-dd 轉為「YYYY年 MM 月 DD 日」
+  function toRocFormat(iso){
+    if(!iso) return "＿＿＿＿ 年 ＿＿ 月 ＿＿ 日";
+    const [y,m,d] = iso.split("-");
+    // 中文與數字之間留空隙，重現 Word 的自動間距
+    return " " + y + " 年 " + m + " 月 " + d + " 日";
+  }
+
+  // 取得本地今天日期（yyyy-mm-dd）
+  function todayISO(){
+    const t = new Date();
+    const p = n => String(n).padStart(2,"0");
+    return t.getFullYear() + "-" + p(t.getMonth()+1) + "-" + p(t.getDate());
+  }
+
+  const $ = id => document.getElementById(id);
+
+  const bindings = [
+    ["inpName","outName"],
+    ["inpOrder","outOrder"],
+    ["inpAdult","outAdult"],
+    ["inpStudent","outStudent"],
+    ["inpChild","outChild"],
+    ["inpSenior","outSenior"],
+  ];
+
+  function render(){
+    // 純文字欄位
+    bindings.forEach(([i,o]) => {
+      $(o).textContent = $(i).value.trim();
+    });
+    // 姓名空白時顯示占位
+    if(!$("inpName").value.trim()) $("outName").textContent = "　　　";
+
+    // 日期欄位
+    const ci = $("inpCheckin").value;
+    const co = $("inpCheckout").value;
+    $("outCheckin").textContent  = toRocFormat(ci);
+    $("outCheckout").textContent = toRocFormat(co);
+    // 兌換期間 = 入住～退房
+    $("outUseStart").textContent = toRocFormat(ci);
+    $("outUseEnd").textContent   = toRocFormat(co);
+    // 開立日期
+    $("outIssue").textContent = toRocFormat($("inpIssue").value);
+  }
+
+  // 初始化：開立日期預設今天；入住預設今天、退房預設明天
+  (function init(){
+    $("inpIssue").value = todayISO();   // 開立日期自動為今天
+    render();
+  })();
+
+  // 任何輸入變動即時更新
+  document.querySelectorAll(".panel input").forEach(el => {
+    el.addEventListener("input", render);
+  });
+
+  // 儲存為 PDF：瀏覽器原生輸出（微軟正黑體、向量文字），檔名 = 訂房序號
+  $("btnPrint").addEventListener("click", () => {
+    const order = $("inpOrder").value.trim() || "未填序號";
+    const name  = $("inpName").value.trim() || "未填姓名";
+    const ci    = $("inpCheckin").value || "未填日期";
+    document.title = order + "_" + name + "_" + ci;   // Outlook 巨集由檔名解析資料
+    window.print();
+  });
+
+</script>
+
+</body>
+</html>

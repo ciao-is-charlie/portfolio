@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>車號解析助手（互動模擬版）</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    background:#f1f3f4; color:#202124; font-size:14px;
+  }
+  .topbar{
+    background:#0b8043; color:#fff; padding:10px 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .topbar b{ font-size:15px; }
+  .topbar .badge{
+    font-size:11px; background:rgba(255,255,255,.2);
+    padding:2px 10px; border-radius:10px;
+  }
+  .flow-hint{
+    background:#fff; border-bottom:1px solid #dadce0;
+    padding:10px 20px; font-size:13px; color:#5f6368;
+  }
+  .flow-hint b{ color:#202124; }
+  .flow-hint .step{
+    display:inline-block; background:#e8f0fe; color:#1a73e8;
+    border-radius:10px; padding:0 8px; font-size:12px; font-weight:700;
+    margin:0 2px;
+  }
+
+  .layout{
+    display:flex; align-items:stretch; min-height:calc(100vh - 90px);
+  }
+
+  /* ===== 模擬 LINE 對話 ===== */
+  .line-panel{
+    width:290px; flex-shrink:0; display:flex; flex-direction:column;
+    background:#7d97be; border-right:1px solid #dadce0;
+  }
+  .line-header{
+    background:#2c3e50; color:#fff; padding:11px 14px;
+    font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px;
+  }
+  .line-header .members{ font-size:11px; font-weight:400; opacity:.7; }
+  .line-body{
+    flex:1; overflow-y:auto; padding:14px 12px; max-height:520px;
+  }
+  .line-day{
+    text-align:center; margin:2px 0 12px;
+  }
+  .line-day span{
+    background:rgba(0,0,0,.18); color:#fff; font-size:10.5px;
+    border-radius:10px; padding:2px 10px;
+  }
+  .msg{
+    display:flex; gap:8px; margin-bottom:12px; align-items:flex-start;
+  }
+  .avatar{
+    width:32px; height:32px; border-radius:50%; background:#f4a83d;
+    color:#fff; font-size:13px; font-weight:700; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .msg-main{ max-width:200px; }
+  .msg-name{ font-size:10.5px; color:#eef2f8; margin-bottom:3px; }
+  .msg-row{ display:flex; align-items:flex-end; gap:5px; }
+  .bubble{
+    background:#fff; border-radius:12px; border-top-left-radius:3px;
+    padding:8px 11px; font-size:12.5px; line-height:1.55;
+    white-space:pre-line; box-shadow:0 1px 1px rgba(0,0,0,.12);
+  }
+  .msg-time{ font-size:10px; color:#e5ebf5; flex-shrink:0; }
+  .line-footer{
+    padding:10px 12px 12px; background:#6c87b0;
+  }
+  .copy-btn{
+    width:100%; padding:11px; border:none; border-radius:8px;
+    background:#06c755; color:#fff; font-weight:700; font-size:13.5px;
+    font-family:inherit; cursor:pointer;
+  }
+  .copy-btn:hover{ background:#05b34d; }
+  .copy-note{
+    font-size:11px; color:#eef2f8; text-align:center; margin-top:7px; line-height:1.5;
+  }
+
+  /* ===== 假試算表 ===== */
+  .sheet-area{ flex:1; min-width:0; padding:18px; overflow-x:auto; }
+  .sheet-title{ font-size:13px; color:#5f6368; margin-bottom:10px; }
+  table{
+    border-collapse:collapse; background:#fff; width:100%;
+    box-shadow:0 1px 3px rgba(0,0,0,.12);
+  }
+  th, td{
+    border:1px solid #dadce0; padding:8px 10px; text-align:left;
+    font-size:13px; vertical-align:top;
+  }
+  th{
+    background:#f8f9fa; color:#5f6368; font-weight:600;
+    font-size:12px; text-align:center;
+  }
+  td.rowhead{
+    background:#f8f9fa; color:#9aa0a6; text-align:center; width:36px; font-size:11px;
+  }
+  td.fill-target{ white-space:pre-line; min-width:150px; }
+  td.filled{ background:#e6f4ea; animation:flash .6s ease; }
+  @keyframes flash{ 0%{ background:#ffd54f; } 100%{ background:#e6f4ea; } }
+  .manual-note{
+    margin-top:12px; font-size:12px; color:#80868b; line-height:1.7;
+    background:#fff; border:1px solid #dadce0; border-radius:8px; padding:10px 14px;
+  }
+
+  /* ===== 側欄 ===== */
+  .sidebar{
+    width:300px; flex-shrink:0; background:#f8f9fa;
+    border-left:1px solid #dadce0; padding:15px;
+  }
+  .sidebar h3{
+    color:#1a73e8; border-bottom:2px solid #1a73e8;
+    padding-bottom:5px; font-size:15px; margin-bottom:8px;
+  }
+  .sidebar p.hint{ font-size:12px; color:#666; margin-bottom:6px; }
+  textarea{
+    width:100%; height:190px; margin-bottom:10px; border-radius:5px;
+    padding:8px; border:1px solid #ccc; font-size:12px;
+    font-family:inherit; resize:vertical; transition:border-color .3s, box-shadow .3s;
+  }
+  textarea.pasted{ border-color:#06c755; box-shadow:0 0 0 2px rgba(6,199,85,.2); }
+  .btn{
+    width:100%; padding:12px; background-color:#f4b400; color:#fff;
+    border:none; border-radius:6px; cursor:pointer; font-weight:bold;
+    font-size:14px; font-family:inherit;
+  }
+  .btn:hover{ background-color:#d9a300; }
+  .btn.secondary{
+    background:#fff; color:#5f6368; border:1px solid #dadce0;
+    margin-top:8px; font-weight:normal; font-size:13px; padding:9px;
+  }
+  .btn.secondary:hover{ background:#f1f3f4; }
+  #status{
+    margin-top:14px; font-size:13px; line-height:1.6;
+    white-space:pre-wrap; padding:10px; border-radius:5px; display:none;
+  }
+  #status.ok{ display:block; color:#0d652d; background:#e6f4ea; }
+  #status.warn{ display:block; color:#d93025; background:#fce8e6; }
+
+  @media (max-width:1050px){
+    .layout{ flex-direction:column; }
+    .line-panel{ width:100%; border-right:none; }
+    .line-body{ max-height:340px; }
+    .sidebar{ width:100%; border-left:none; border-top:1px solid #dadce0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <b>車號解析助手</b>
+  <span class="badge">互動模擬版</span>
+  <span style="font-size:12px; opacity:.85;">原版為 Google Apps Script 側欄工具，此頁將相同解析邏輯移植為純前端展示</span>
+</div>
+
+<div class="flow-hint">
+  平常的流程就是這樣：<span class="step">1</span> 車行在 LINE 群傳來派車訊息 →
+  <span class="step">2</span> 按下方綠色按鈕複製整串訊息（會自動帶入右側外掛）→
+  <span class="step">3</span> 按「開始解析並填入」，看車牌自動落進班表。<b>以前這中間是一筆一筆人工核對手 KEY 的。</b>
+</div>
+
+<div class="layout">
+
+  <!-- 模擬 LINE 群組 -->
+  <div class="line-panel">
+    <div class="line-header">
+      🚕 車行派車群（示範）
+      <span class="members">3</span>
+    </div>
+    <div class="line-body">
+      <div class="line-day"><span>今天</span></div>
+
+      <div class="msg">
+        <div class="avatar">車</div>
+        <div class="msg-main">
+          <div class="msg-name">阿明車行</div>
+          <div class="msg-row">
+            <div class="bubble">--------2026/07/20-----------
+
+0400（1203）
+派遣車輛：灰色/ABC-1234
+0400（311）
+派遣車輛：白色/DEF-5678
+0500（1508）刷卡
+派遣車輛：白色/GHJ-2468
+0520（908）
+派遣車輛：黃色/KLM-1357
+0530（1205）刷卡
+派遣車輛：白色/DEF-5678
+0530（808）
+派遣車輛：黃色/NPQ-8642
+0530（801）4件+100
+派遣車輛：灰色/RST-9753
+0530（809）
+派遣車輛：白色/UVW-7531外派
+0545（1201）
+派遣車輛：白色/GHJ-2468
+0550（1111）刷卡
+派遣車輛：黃色/XYZ-8520
+0600（802）刷/改行程
+派遣車輛：黃色/KLM-1357
+0600（1103/1105）現金800
+派遣車輛：黑色/BCD-6420
+0620（1301/1501）現金800
+派遣車輛：黑色/EFG-1970
+0700（1202）
+派遣車輛：白色/DEF-5678
+
+
+###派遣中###
+（最晚用車前5~10分內給車號）</div>
+            <span class="msg-time">03:58</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="line-footer">
+      <button class="copy-btn" id="copyBtn" onclick="copyMessages()">📋 複製整串訊息</button>
+      <p class="copy-note">實際使用時就是從 LINE 全選複製，<br>這裡按一下就會帶入右側外掛。</p>
+    </div>
+  </div>
+
+  <!-- 假試算表 -->
+  <div class="sheet-area">
+    <p class="sheet-title">飯店每日接送班表（模擬 Google Sheet 的 B5:E 區）。左邊每一則訊息，以前都要人工找到對應的房號＋時間，再把車牌抄進 E 欄。</p>
+    <table id="sheetTable">
+      <thead>
+        <tr><th></th><th>B 房號</th><th>C 時間</th><th>D 目的地</th><th>E 派車資訊（自動填入）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowhead">5</td><td>1203</td><td>04:00</td><td>桃園機場 T1</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">6</td><td>311</td><td>04:00</td><td>桃園機場 T2</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">7</td><td>1508</td><td>05:00</td><td>桃園機場 T1</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">8</td><td>908</td><td>05:20</td><td>桃園機場 T2</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">9</td><td>1205</td><td>05:30</td><td>桃園機場 T1</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">10</td><td>808</td><td>05:30</td><td>桃園機場 T2</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">11</td><td>801</td><td>05:30</td><td>桃園機場 T1</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">12</td><td>809</td><td>05:30</td><td>桃園機場 T2</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">13</td><td>1201</td><td>05:45</td><td>HSR 桃園站</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">14</td><td>1111</td><td>05:50</td><td>桃園機場 T1</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">15</td><td>802</td><td>06:00</td><td>桃園機場 T2</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">16</td><td>1103.1105</td><td>06:00</td><td>桃園機場 T1</td><td class="fill-target"></td></tr>
+        <tr><td class="rowhead">17</td><td>1301.1501</td><td>06:20</td><td>桃園機場 T2</td><td class="fill-target"></td></tr>
+      </tbody>
+    </table>
+    <div class="manual-note">
+      這支腳本處理的髒活：一大早一整串訊息裡，同一台車跑好幾趟、刷卡/現金/改行程各種註記混雜、房號分隔有人打「/」有人打「.」——全部先「終極正規化」再與班表雙向比對。看幾個解析後的細節：<b>801 房</b>的行李加價自動帶「+100」、<b>809 房</b>的外派車自動加註「外派-白」、<b>1201 房</b>去 HSR 自動加註「已知200」。另外訊息裡的 <b>0700（1202）</b>在班表上故意還沒 KEY，解析後會出現在失敗清單——<b>自動化要能抓到自己配不上的資料，而不是默默漏掉。</b>
+    </div>
+  </div>
+
+  <!-- 側欄外掛 -->
+  <aside class="sidebar">
+    <h3>車號解析助手</h3>
+    <p class="hint">請貼上車行的訊息：</p>
+    <textarea id="rawList" placeholder="按左側綠色按鈕，或自己貼上訊息..."></textarea>
+    <button class="btn" onclick="autoFill()">✨ 開始解析並填入</button>
+    <button class="btn secondary" onclick="resetSheet()">↺ 清空重來</button>
+    <div id="status"></div>
+  </aside>
+
+</div>
+
+<script>
+/* ==== 與 Google Apps Script 版相同的解析邏輯，移植為純前端 ==== */
+function processPartnerList(rawText){
+  if(!rawText) return { msg:"❌ 錯誤：內容是空的！", ok:false };
+
+  var rows = document.querySelectorAll('#sheetTable tbody tr');
+  var data = [];
+  rows.forEach(function(tr){
+    var tds = tr.querySelectorAll('td');
+    data.push([tds[1].textContent, tds[2].textContent, tds[3].textContent, tds[4].textContent]);
+  });
+
+  // 1. 解析內容區塊（容許括號內有空格或點）
+  var blocks = rawText.split(/(?=\d{4}\s*[（(]\s*[\d\/\.\s]+\s*[）)])/);
+  var parsedData = {};
+
+  blocks.forEach(function(block){
+    var headerMatch = block.match(/(\d{4})\s*[（(]\s*([\d\/\.\s]+)\s*[）)]/);
+    if(!headerMatch) return;
+
+    var timeStr = headerMatch[1].substring(0,2) + ":" + headerMatch[1].substring(2,4);
+    // 終極正規化：房號內所有非數字都換成點
+    var room = headerMatch[2].toString().replace(/[^\d]/g,".").replace(/\.+/g,".").replace(/^\.+|\.+$/g,"");
+
+    var vehicleRegex = /派遣車輛\s*[:：]\s*(.*?)\/([A-Z0-9-]+)/g;
+    var vMatch, vehicleStrings = [];
+    var isExternal = block.indexOf("外派") > -1;
+
+    while((vMatch = vehicleRegex.exec(block)) !== null){
+      var color = vMatch[1].replace("色","").trim();
+      var plate = vMatch[2].trim();
+      vehicleStrings.push(isExternal ? plate + "\n外派-" + color : plate);
+    }
+
+    var hasFee100 = block.indexOf("100") > -1 && block.indexOf("+") > -1;
+
+    if(vehicleStrings.length > 0){
+      parsedData[room + "_" + timeStr] = {
+        plates: vehicleStrings.join("\n"),
+        partnerFee: hasFee100 ? "+100" : null,
+        matched: false,
+        displayInfo: room + " / " + timeStr + " / " + vehicleStrings[0].split("\n")[0]
+      };
+    }
+  });
+
+  // 2. 比對並填入
+  var fillCount = 0;
+  for(var i = 0; i < data.length; i++){
+    var sheetRoomRaw = data[i][0].replace(/[^\d]/g,".").replace(/\.+/g,".").replace(/^\.+|\.+$/g,"");
+    var sheetTimeRaw = data[i][1].replace(/\s+/g,"");
+    var sheetDest = data[i][2].toUpperCase();
+    var sheetExistingE = data[i][3];
+
+    (function(rowIndex){
+      Object.keys(parsedData).forEach(function(key){
+        var parts = key.split("_");
+        if(sheetRoomRaw.indexOf(parts[0]) > -1 && sheetTimeRaw.indexOf(parts[1]) > -1){
+          var res = parsedData[key];
+          var finalValue = res.plates;
+          var extraNotes = [];
+          if(sheetDest.indexOf("HSR") > -1) extraNotes.push("已知200");
+          if(res.partnerFee === "+100" || sheetExistingE.indexOf("+100") > -1) extraNotes.push("+100");
+          if(extraNotes.length > 0) finalValue += "\n(" + extraNotes.join(" & ") + ")";
+
+          var cell = rows[rowIndex].querySelectorAll('td')[4];
+          cell.textContent = finalValue;
+          cell.classList.remove('filled');
+          void cell.offsetWidth;
+          cell.classList.add('filled');
+          fillCount++;
+          parsedData[key].matched = true;
+        }
+      });
+    })(i);
+  }
+
+  // 3. 整理失敗清單
+  var failedList = [];
+  Object.keys(parsedData).forEach(function(key){
+    if(!parsedData[key].matched) failedList.push(parsedData[key].displayInfo);
+  });
+
+  var resultMsg = "✅ 成功填入 " + fillCount + " 筆資料！";
+  var ok = true;
+  if(failedList.length > 0){
+    resultMsg += "\n\n⚠️ 房號/時間/車號 比對失敗：\n" + failedList.join("\n") + "\n(請檢查表格是否漏 KEY)";
+    ok = false;
+  }
+  return { msg: resultMsg, ok: ok };
+}
+
+/* ==== LINE 面板：收集訊息 → 複製並帶入 ==== */
+function collectLineMessages(){
+  var bubbles = document.querySelectorAll('.line-body .bubble');
+  var parts = [];
+  bubbles.forEach(function(b){ parts.push(b.innerText.trim()); });
+  return parts.join("\n\n");
+}
+
+function copyMessages(){
+  var text = collectLineMessages();
+  var ta = document.getElementById('rawList');
+  ta.value = text;
+  ta.classList.remove('pasted');
+  void ta.offsetWidth;
+  ta.classList.add('pasted');
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(function(){});
+  }
+
+  var btn = document.getElementById('copyBtn');
+  var original = btn.textContent;
+  btn.textContent = '✓ 已複製並帶入右側';
+  setTimeout(function(){ btn.textContent = original; }, 1800);
+}
+
+function autoFill(){
+  var text = document.getElementById('rawList').value;
+  var statusDiv = document.getElementById('status');
+  if(!text.trim()){
+    statusDiv.className = 'warn';
+    statusDiv.innerText = '❌ 外掛裡還沒有訊息，先按左側「複製整串訊息」。';
+    return;
+  }
+  var result = processPartnerList(text);
+  statusDiv.className = result.ok ? 'ok' : 'warn';
+  statusDiv.innerText = result.msg;
+}
+
+var originalE = ["","","","","","","","","","","","",""];
+function resetSheet(){
+  document.querySelectorAll('#sheetTable tbody tr').forEach(function(tr, i){
+    var cell = tr.querySelectorAll('td')[4];
+    cell.textContent = originalE[i];
+    cell.classList.remove('filled');
+  });
+  var ta = document.getElementById('rawList');
+  ta.value = ''; ta.classList.remove('pasted');
+  var s = document.getElementById('status');
+  s.className = ''; s.innerText = ''; s.style.display = 'none';
+}
+</script>
+
+</body>
+</html>
